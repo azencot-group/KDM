@@ -95,32 +95,39 @@ class FunctionalLoss:
     def __call__(self, net, images, labels=None, augment_pipe=None):
         rnd_normal = torch.randn([images.shape[0], 1, 1, 1], device=images.device)
         sigma = (rnd_normal * self.P_std + self.P_mean).exp()
-        weight = (sigma ** 2 + self.sigma_data ** 2) / (sigma * self.sigma_data) ** 2
-        y, augment_labels = augment_pipe(images) if augment_pipe is not None else (images, None)
-        n = torch.randn_like(y) * sigma
+
+        sigma = torch.ones_like(sigma)  # todo - delete
+
+        # weight = (sigma ** 2 + self.sigma_data ** 2) / (sigma * self.sigma_data) ** 2 todo - return
+
+        # y, augment_labels = augment_pipe(images) if augment_pipe is not None else (images, None) todo - return
+        n = torch.randn_like(images) * sigma
 
         # project images to latent space to get their coefficients
         l_images = net.encode_image(images, sigma.flatten(), labels)
 
+        alpha = 0.05
+        noise_images = alpha * images + (1 - alpha) * n
         # project noisy images to latent space to get their coefficients
-        l_images_n = net.encode_noisy_image(y + n, sigma.flatten(), labels)
+        l_images_noisy = net.encode_noisy_image(noise_images, sigma.flatten(), labels)
 
         # calculate the matrix that transform the function coefficients to the noisy coefficient
-        coef_mat = net.get_transition_matrix(l_images_n, sigma.flatten(), labels)
+        coef_mat = net.get_transition_matrix(l_images_noisy, sigma.flatten(), labels)
 
         # push the noisy coefficients to the  image coefficient in the latent space
-        b, c, _, _ = l_images_n.shape
-        vec_images = l_images_n.reshape(b * c, -1)
+        b, c, _, _ = l_images_noisy.shape
+        vec_images = l_images_noisy.reshape(b * c, -1)
         coef_mat = coef_mat.reshape(b * c, coef_mat.shape[-2], coef_mat.shape[-1])
 
-        est_l_images = torch.bmm(vec_images.unsqueeze(1), coef_mat).squeeze().reshape(l_images_n.shape)
+        est_l_images = torch.bmm(vec_images.unsqueeze(1), coef_mat).squeeze().reshape(l_images_noisy.shape)
 
         # decode the image after the transformation
         est_images = net.decode_image(est_l_images, sigma.flatten(), labels)
 
         # calculate the loss
-        loss_diffusion = weight * ((l_images - est_l_images) ** 2)
-        loss_decode = weight * ((images - est_images) ** 2)
+        loss_diffusion = ((l_images - est_l_images) ** 2)  # todo  - return the weight *
+        loss_decode = ((images - est_images) ** 2)  # todo  - return the weight *
+        # todo - adding perceptual loss
 
         loss = (loss_diffusion + loss_decode) / 2
 
@@ -129,6 +136,10 @@ class FunctionalLoss:
             run['loss'].append(loss.mean().item())
             run['loss_diffusion'].append(loss_diffusion.mean().item())
             run['loss_decode'].append(loss_decode.mean().item())
+
+        print(f'loss: {loss.mean().item()},'
+              f' loss_diffusion: {loss_diffusion.mean().item()},'
+              f' loss_decode: {loss_decode.mean().item()}')
 
         return loss
 
