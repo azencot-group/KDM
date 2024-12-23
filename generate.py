@@ -69,6 +69,29 @@ def functional_sampler(
         S_churn=0, S_min=0, S_max=float('inf'), S_noise=1, ):
     # Main sampling loop.
     latents = latents.to(torch.float64)
+    t = torch.flip(torch.tensor(np.arange(0, 1000)).to(latents.device))
+
+    cur_x = net.encode_noisy_image(latents, torch.ones() * 999, class_labels)
+    for i in t:
+        coef_mat = net.get_transition_matrix(cur_x, torch.ones() * i, class_labels)
+        # push the noisy coefficients to the  image coefficient in the latent space
+        b, c, _, _ = cur_x.shape
+        vec_images = cur_x.reshape(b * c, -1)
+        coef_mat = coef_mat.reshape(b * c, coef_mat.shape[-2], coef_mat.shape[-1])
+
+        cur_x = torch.bmm(vec_images.unsqueeze(1), coef_mat).squeeze().reshape(cur_x.shape)
+
+        # decode the image after the transformation
+    est_images = net.decode_image(cur_x, torch.ones() * 0.001, class_labels)
+
+    return est_images
+
+def functional_samplerv0(
+        net, latents, class_labels=None, randn_like=torch.randn_like,
+        num_steps=18, sigma_min=0.002, sigma_max=80, rho=7,
+        S_churn=0, S_min=0, S_max=float('inf'), S_noise=1, ):
+    # Main sampling loop.
+    latents = latents.to(torch.float64)
     sigmas = torch.ones(latents.shape[0]).flatten().to(latents.device)
     l_images_n = net.encode_noisy_image(latents, sigmas, class_labels)
     coef_mat = net.get_transition_matrix(latents, sigmas, class_labels)
