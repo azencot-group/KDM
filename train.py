@@ -84,9 +84,9 @@ def parse_int_list(s):
 @click.option('--nosubdir', help='Do not create a subdirectory for results', is_flag=True)
 @click.option('--tick', help='How often to print progress', metavar='KIMG', type=click.IntRange(min=1), default=50,
               show_default=True)
-@click.option('--snap', help='How often to save snapshots', metavar='TICKS', type=click.IntRange(min=1), default=1000,
+@click.option('--snap', help='How often to save snapshots', metavar='TICKS', type=click.IntRange(min=1), default=1,
               show_default=True)  # todo - change to high number
-@click.option('--dump', help='How often to dump state', metavar='TICKS', type=click.IntRange(min=1), default=1000,
+@click.option('--dump', help='How often to dump state', metavar='TICKS', type=click.IntRange(min=1), default=1,
               show_default=True)  # todo - change to high number
 @click.option('--seed', help='Random seed  [default: random]', metavar='INT', type=int)
 @click.option('--transfer', help='Transfer learning from network pickle', metavar='PKL|URL', type=str)
@@ -142,7 +142,7 @@ def main(**kwargs):
     elif opts.arch == 'ddpmpp_func':
         c.network_kwargs.update(model_type='FunctionalDiffusion', embedding_type='positional', encoder_type='standard',
                                 decoder_type='standard')
-        c.network_kwargs.update(channel_mult_noise=1, resample_filter=[1, 1], model_channels=64, channel_mult=[2, 2])
+        c.network_kwargs.update(channel_mult_noise=1, resample_filter=[1, 1], model_channels=32, channel_mult=[1, 2])
     else:
         assert opts.arch == 'adm'
         c.network_kwargs.update(model_type='DhariwalUNet', model_channels=192, channel_mult=[1, 2, 3, 4])

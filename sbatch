@@ -5,9 +5,9 @@
 ### To ignore, just add another # - like so: ##SBATCH
 ################################################################################################
 
-#SBATCH --partition rtx6000			### specify partition name where to run a job. main: all nodes; gtx1080: 1080 gpu card nodes; rtx2080: 2080 nodes; teslap100: p100 nodes; titanrtx: titan nodes
+#SBATCH --partition rtx4090			### specify partition name where to run a job. main: all nodes; gtx1080: 1080 gpu card nodes; rtx2080: 2080 nodes; teslap100: p100 nodes; titanrtx: titan nodes
 #SBATCH --qos azencot
-#SBATCH --gpus=rtx_6000:1			# 1 GPU
+#SBATCH --gpus=rtx_4090:1			# 1 GPU
 #SBATCH --time 7-00:00:00			### limit the time of job running. Make sure it is not greater than the partition time limit!! Format: D-H:MM:SS
 #SBATCH --job-name train			### name of the job
 #SBATCH --output train-%J.out			### output log for running job - %J for job number
@@ -21,4 +21,4 @@ echo -e "SLURM_JOB_NODELIST:\t" $SLURM_JOB_NODELIST "\n\n"
 ### Start your src_code below ####
 module load anaconda				### load anaconda module (must be present when working with conda environments)
 source activate edm				### activate a conda environment, replace my_env with your conda environment
-python train.py --outdir=training-runs --data=datasets/cifar10-32x32.zip --cond=0 --arch=ddpmpp_func --batch 16
+python train.py --outdir=/cs/cs_groups/azencot_group/functional_diffusion/trained_models  --data=datasets/cifar10-32x32.zip --cond=0 --arch=ddpmpp --batch 4

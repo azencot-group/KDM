@@ -17,9 +17,10 @@ import numpy as np
 import torch
 import PIL.Image
 import dnnlib
+from our_utils import linear_beta_schedule
 from torch_utils import distributed as dist
 import matplotlib
-matplotlib.use('Qt5Agg')
+matplotlib.use('Agg')
 
 # ----------------------------------------------------------------------------
 # Proposed EDM sampler (Algorithm 2).
@@ -62,28 +63,43 @@ def edm_sampler(
 
     return x_next
 
-
+from matplotlib import pyplot as plt
 def functional_sampler(
         net, latents, class_labels=None, randn_like=torch.randn_like,
         num_steps=18, sigma_min=0.002, sigma_max=80, rho=7,
         S_churn=0, S_min=0, S_max=float('inf'), S_noise=1, ):
     # Main sampling loop.
     latents = latents.to(torch.float64)
-    t = torch.flip(torch.tensor(np.arange(0, 1000)).to(latents.device))
+    t = torch.flip(torch.tensor(np.arange(1, 1000)).to(latents.device), dims=[0])[::100]
+    beta_schedule_fn = linear_beta_schedule
+    betas = beta_schedule_fn(1000)
+    alphas = 1. - betas
+    alphas_cumprod = torch.cumprod(alphas, dim=0)
+    sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod)
+    sqrt_one_minus_alphas_cumprod = torch.sqrt(1. - alphas_cumprod)
 
-    cur_x = net.encode_noisy_image(latents, torch.ones() * 999, class_labels)
+    cur_x = net.encode_noisy_image(latents, torch.ones(latents.shape[0]).to(latents.device) * 999, class_labels)
     for i in t:
-        coef_mat = net.get_transition_matrix(cur_x, torch.ones() * i, class_labels)
+        coef_mat = net.get_transition_matrix(cur_x, torch.ones(latents.shape[0]).to(latents.device) * i, class_labels)
         # push the noisy coefficients to the  image coefficient in the latent space
         b, c, _, _ = cur_x.shape
         vec_images = cur_x.reshape(b * c, -1)
         coef_mat = coef_mat.reshape(b * c, coef_mat.shape[-2], coef_mat.shape[-1])
 
-        cur_x = torch.bmm(vec_images.unsqueeze(1), coef_mat).squeeze().reshape(cur_x.shape)
+        # cur_x = torch.bmm(vec_images.unsqueeze(1), coef_mat).squeeze().reshape(cur_x.shape)
+        # est_images = net.decode_image(cur_x, torch.ones(latents.shape[0]).to(latents.device), class_labels)
+        # plt.imshow(est_images[0].detach().cpu().permute(1, 2, 0))
+        # plt.savefig(f'/cs/cs_groups/azencot_group/functional_diffusion/gen_{i}.png')
+
+        next_x = (torch.bmm(vec_images.unsqueeze(1), coef_mat).squeeze()).reshape(cur_x.shape)
+        cur_x = 0.9 * cur_x + 0.1 * next_x
+        est_images = net.decode_image(cur_x, torch.ones(latents.shape[0]).to(latents.device), class_labels)
+        plt.imshow(est_images[1].detach().cpu().permute(1, 2, 0))
+        plt.savefig(f'/cs/cs_groups/azencot_group/functional_diffusion/gen_{i}.png')
 
         # decode the image after the transformation
-    est_images = net.decode_image(cur_x, torch.ones() * 0.001, class_labels)
-
+    est_images = net.decode_image(cur_x, torch.ones(latents.shape[0]).to(latents.device), class_labels)
+    images_np = (est_images * 127.5 + 128).clip(0, 255).to(torch.uint8).permute(0, 2, 3, 1).cpu().numpy()
     return est_images
 
 def functional_samplerv0(

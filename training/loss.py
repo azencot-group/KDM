@@ -83,11 +83,16 @@ class EDMLoss:
         n = torch.randn_like(y) * sigma
         D_yn = net(y + n, sigma, labels, augment_labels=augment_labels)
         loss = weight * ((D_yn - y) ** 2)
+
+        if torch.rand(1) < 0.1:
+            run['loss'].append(loss.mean().item())
+
         return loss
 
 
 @persistence.persistent_class
-class FunctionalLoss:
+class FunctionalLossIterativeKoopman:
+    # time dependent loss
     def __init__(self, P_mean=-1.2, P_std=1.2, sigma_data=0.5):
         self.P_mean = P_mean
         self.P_std = P_std
@@ -130,6 +135,129 @@ class FunctionalLoss:
 
         # calculate the loss
         loss_diffusion = ((l_images - est_l_images) ** 2)
+        loss_decode = ((images - est_images) ** 2)
+
+        loss = (loss_diffusion + loss_decode) / 2
+
+        # print this once in a while
+        if torch.rand(1) < 0.1:
+            run['loss'].append(loss.mean().item())
+            run['loss_diffusion'].append(loss_diffusion.mean().item())
+            run['loss_decode'].append(loss_decode.mean().item())
+
+        print(f'loss: {loss.mean().item()},'
+              f' loss_diffusion: {loss_diffusion.mean().item()},'
+              f' loss_decode: {loss_decode.mean().item()}')
+
+        return loss
+
+
+class FunctionalLoss:
+    # Adding power matrix to the loss
+    def __init__(self, P_mean=-1.2, P_std=1.2, sigma_data=0.5):
+        self.P_mean = P_mean
+        self.P_std = P_std
+        self.sigma_data = sigma_data
+
+        beta_schedule_fn = linear_beta_schedule
+        betas = beta_schedule_fn(1000)
+        alphas = 1. - betas
+        alphas_cumprod = torch.cumprod(alphas, dim=0)
+        alphas_cumprod_prev = F.pad(alphas_cumprod[:-1], (1, 0), value=1.)
+        self.sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod)
+        self.sqrt_one_minus_alphas_cumprod = torch.sqrt(1. - alphas_cumprod)
+
+    def __call__(self, net, images, labels=None, augment_pipe=None):
+        # get the sigmas for the diffusion process like ddpm
+        t = torch.randint(0, 1000, (images.shape[0],)).to(images.device)
+        noise = torch.randn_like(images)
+        alphas = self.sqrt_alphas_cumprod.to(images.device)[t][:, None, None, None]
+        betas = self.sqrt_one_minus_alphas_cumprod.to(images.device)[t][:, None, None, None]
+        noise_images = alphas * images + betas * noise
+
+        # project images to latent space to get their coefficients
+        l_images = net.encode_image(images, t.flatten(), labels)
+
+        # project noisy images to latent space to get their coefficients
+        l_images_noisy = net.encode_noisy_image(noise_images, t.flatten(), labels)
+
+        # calculate the matrix that transform the function coefficients to the noisy coefficient
+        coef_mat = net.get_transition_matrix(l_images_noisy, t.flatten(), labels)
+
+        # push the noisy coefficients to the  image coefficient in the latent space
+        b, c, _, _ = l_images_noisy.shape
+        vec_images = l_images_noisy.reshape(b * c, -1)
+        coef_mat = coef_mat.reshape(b * c, coef_mat.shape[-2], coef_mat.shape[-1])
+
+        est_l_images = torch.bmm(vec_images.unsqueeze(1), coef_mat).squeeze().reshape(l_images_noisy.shape)
+
+        # decode the image after the transformation
+        est_images = net.decode_image(est_l_images, t.flatten(), labels)
+
+        # calculate the loss
+        loss_diffusion = ((l_images - est_l_images) ** 2)
+        loss_decode = ((images - est_images) ** 2)
+
+        loss = (loss_diffusion + loss_decode) / 2
+
+        # print this once in a while
+        if torch.rand(1) < 0.1:
+            run['loss'].append(loss.mean().item())
+            run['loss_diffusion'].append(loss_diffusion.mean().item())
+            run['loss_decode'].append(loss_decode.mean().item())
+
+        print(f'loss: {loss.mean().item()},'
+              f' loss_diffusion: {loss_diffusion.mean().item()},'
+              f' loss_decode: {loss_decode.mean().item()}')
+
+        return loss
+
+
+class FunctionalLossV2:
+    # one step at a time loss
+    def __init__(self, P_mean=-1.2, P_std=1.2, sigma_data=0.5):
+        self.P_mean = P_mean
+        self.P_std = P_std
+        self.sigma_data = sigma_data
+
+        beta_schedule_fn = linear_beta_schedule
+        betas = beta_schedule_fn(1000)
+        alphas = 1. - betas
+        alphas_cumprod = torch.cumprod(alphas, dim=0)
+        alphas_cumprod_prev = F.pad(alphas_cumprod[:-1], (1, 0), value=1.)
+        self.sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod)
+        self.sqrt_one_minus_alphas_cumprod = torch.sqrt(1. - alphas_cumprod)
+
+    def __call__(self, net, images, labels=None, augment_pipe=None):
+        # get the sigmas for the diffusion process like ddpm
+        t = torch.randint(1, 1000, (images.shape[0],)).to(images.device)
+        noise = torch.randn_like(images)
+        alphas = self.sqrt_alphas_cumprod.to(images.device)[t][:, None, None, None]
+        betas = self.sqrt_one_minus_alphas_cumprod.to(images.device)[t][:, None, None, None]
+        noise_images = alphas * images + betas * noise
+
+        # project images to latent space to get their coefficients
+        l_images = net.encode_image(images, t.flatten(), labels)
+
+        # project noisy images to latent space to get their coefficients
+        l_images_noisy = net.encode_noisy_image(noise_images, t.flatten(), labels)
+        l_images_noisy_minus_one = net.encode_noisy_image(noise_images, t.flatten() - 1, labels)
+
+        # calculate the matrix that transform the function coefficients to the noisy coefficient
+        coef_mat = net.get_transition_matrix(l_images_noisy, t.flatten(), labels)
+
+        # push the noisy coefficients to the  image coefficient in the latent space
+        b, c, _, _ = l_images_noisy.shape
+        vec_images = l_images_noisy.reshape(b * c, -1)
+        coef_mat = coef_mat.reshape(b * c, coef_mat.shape[-2], coef_mat.shape[-1])
+
+        est_l_images_noisy_minus_one = torch.bmm(vec_images.unsqueeze(1), coef_mat).squeeze().reshape(l_images_noisy.shape)
+
+        # decode the image after the transformation
+        est_images = net.decode_image(l_images, t.flatten(), labels)
+
+        # calculate the loss
+        loss_diffusion = ((est_l_images_noisy_minus_one - l_images_noisy_minus_one) ** 2)
         loss_decode = ((images - est_images) ** 2)
 
         loss = (loss_diffusion + loss_decode) / 2
