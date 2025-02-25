@@ -17,13 +17,14 @@ import numpy as np
 import torch
 import PIL.Image
 import dnnlib
-from our_utils import linear_beta_schedule
 from torch_utils import distributed as dist
-import matplotlib
-matplotlib.use('Agg')
+from utils import plot_image_sequence
+import threading
+
 
 # ----------------------------------------------------------------------------
 # Proposed EDM sampler (Algorithm 2).
+
 
 def edm_sampler(
         net, latents, class_labels=None, randn_like=torch.randn_like,
@@ -42,6 +43,7 @@ def edm_sampler(
 
     # Main sampling loop.
     x_next = latents.to(torch.float64) * t_steps[0]
+    gen_path = [x_next]
     for i, (t_cur, t_next) in enumerate(zip(t_steps[:-1], t_steps[1:])):  # 0, ..., N-1
         x_cur = x_next
 
@@ -54,75 +56,16 @@ def edm_sampler(
         denoised = net(x_hat, t_hat, class_labels).to(torch.float64)
         d_cur = (x_hat - denoised) / t_hat
         x_next = x_hat + (t_next - t_hat) * d_cur
+        gen_path.insert(0, x_next)
 
         # Apply 2nd order correction.
         if i < num_steps - 1:
             denoised = net(x_next, t_next, class_labels).to(torch.float64)
             d_prime = (x_next - denoised) / t_next
             x_next = x_hat + (t_next - t_hat) * (0.5 * d_cur + 0.5 * d_prime)
+            gen_path.insert(0, x_next)
 
-    return x_next
-
-from matplotlib import pyplot as plt
-def functional_sampler(
-        net, latents, class_labels=None, randn_like=torch.randn_like,
-        num_steps=18, sigma_min=0.002, sigma_max=80, rho=7,
-        S_churn=0, S_min=0, S_max=float('inf'), S_noise=1, ):
-    # Main sampling loop.
-    latents = latents.to(torch.float64)
-    t = torch.flip(torch.tensor(np.arange(1, 1000)).to(latents.device), dims=[0])[::100]
-    beta_schedule_fn = linear_beta_schedule
-    betas = beta_schedule_fn(1000)
-    alphas = 1. - betas
-    alphas_cumprod = torch.cumprod(alphas, dim=0)
-    sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod)
-    sqrt_one_minus_alphas_cumprod = torch.sqrt(1. - alphas_cumprod)
-
-    cur_x = net.encode_noisy_image(latents, torch.ones(latents.shape[0]).to(latents.device) * 999, class_labels)
-    for i in t:
-        coef_mat = net.get_transition_matrix(cur_x, torch.ones(latents.shape[0]).to(latents.device) * i, class_labels)
-        # push the noisy coefficients to the  image coefficient in the latent space
-        b, c, _, _ = cur_x.shape
-        vec_images = cur_x.reshape(b * c, -1)
-        coef_mat = coef_mat.reshape(b * c, coef_mat.shape[-2], coef_mat.shape[-1])
-
-        # cur_x = torch.bmm(vec_images.unsqueeze(1), coef_mat).squeeze().reshape(cur_x.shape)
-        # est_images = net.decode_image(cur_x, torch.ones(latents.shape[0]).to(latents.device), class_labels)
-        # plt.imshow(est_images[0].detach().cpu().permute(1, 2, 0))
-        # plt.savefig(f'/cs/cs_groups/azencot_group/functional_diffusion/gen_{i}.png')
-
-        next_x = (torch.bmm(vec_images.unsqueeze(1), coef_mat).squeeze()).reshape(cur_x.shape)
-        cur_x = 0.9 * cur_x + 0.1 * next_x
-        est_images = net.decode_image(cur_x, torch.ones(latents.shape[0]).to(latents.device), class_labels)
-        plt.imshow(est_images[1].detach().cpu().permute(1, 2, 0))
-        plt.savefig(f'/cs/cs_groups/azencot_group/functional_diffusion/gen_{i}.png')
-
-        # decode the image after the transformation
-    est_images = net.decode_image(cur_x, torch.ones(latents.shape[0]).to(latents.device), class_labels)
-    images_np = (est_images * 127.5 + 128).clip(0, 255).to(torch.uint8).permute(0, 2, 3, 1).cpu().numpy()
-    return est_images
-
-def functional_samplerv0(
-        net, latents, class_labels=None, randn_like=torch.randn_like,
-        num_steps=18, sigma_min=0.002, sigma_max=80, rho=7,
-        S_churn=0, S_min=0, S_max=float('inf'), S_noise=1, ):
-    # Main sampling loop.
-    latents = latents.to(torch.float64)
-    sigmas = torch.ones(latents.shape[0]).flatten().to(latents.device)
-    l_images_n = net.encode_noisy_image(latents, sigmas, class_labels)
-    coef_mat = net.get_transition_matrix(latents, sigmas, class_labels)
-
-    # push the noisy coefficients to the  image coefficient in the latent space
-    b, c, _, _ = l_images_n.shape
-    vec_images = l_images_n.reshape(b * c, -1)
-    coef_mat = coef_mat.reshape(b * c, coef_mat.shape[-2], coef_mat.shape[-1])
-
-    est_l_images = torch.bmm(vec_images.unsqueeze(1), coef_mat).squeeze().reshape(l_images_n.shape)
-
-    # decode the image after the transformation
-    est_images = net.decode_image(est_l_images, sigmas.flatten(), class_labels)
-
-    return est_images
+    return x_next, gen_path
 
 
 # ----------------------------------------------------------------------------
@@ -354,20 +297,20 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
         torch.distributed.barrier()
 
     # Loop over batches.
-    dist.print0(f'Generating {len(seeds)} images to "{outdir}"...')
-    for batch_seeds in tqdm.tqdm(rank_batches, unit='batch', disable=(dist.get_rank() != 0)):
+    # dist.print0(f'Generating {len(seeds)} images to "{outdir}"...')
+    i = 0
+    # for batch_seeds in tqdm.tqdm(rank_batches, unit='batch', disable=(dist.get_rank() != 0)):
+    path_to_save = '/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_edm_onestep/'
+    while True:
         torch.distributed.barrier()
-        batch_size = len(batch_seeds)
+        batch_size = 256
         if batch_size == 0:
             continue
-
-        # Pick latents and labels.
-        rnd = StackedRandomGenerator(device, batch_seeds)
-        latents = rnd.randn([batch_size, net.img_channels, net.img_resolution, net.img_resolution], device=device)
+        latents = torch.randn([batch_size, net.img_channels, net.img_resolution, net.img_resolution], device=device)
         class_labels = None
         if net.label_dim:
             class_labels = torch.eye(net.label_dim, device=device)[
-                rnd.randint(net.label_dim, size=[batch_size], device=device)]
+                torch.randint(net.label_dim, size=[batch_size], device=device)]
         if class_idx is not None:
             class_labels[:, :] = 0
             class_labels[:, class_idx] = 1
@@ -375,21 +318,24 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
         # Generate images.
         sampler_kwargs = {key: value for key, value in sampler_kwargs.items() if value is not None}
         have_ablation_kwargs = any(x in sampler_kwargs for x in ['solver', 'discretization', 'schedule', 'scaling'])
-        # sampler_fn = ablation_sampler if have_ablation_kwargs else edm_sampler
-        sampler_fn = functional_sampler
-        images = sampler_fn(net, latents, class_labels, randn_like=rnd.randn_like, **sampler_kwargs)
+        sampler_fn = ablation_sampler if have_ablation_kwargs else edm_sampler
+        images, gen_path = sampler_fn(net, latents, class_labels, randn_like=torch.randn_like, **sampler_kwargs)
+        # plot_image_sequence(torch.stack(gen_path)[:, 0])
 
-        # Save images.
-        images_np = (images * 127.5 + 128).clip(0, 255).to(torch.uint8).permute(0, 2, 3, 1).cpu().numpy()
-        for seed, image_np in zip(batch_seeds, images_np):
-            image_dir = os.path.join(outdir, f'{seed - seed % 1000:06d}') if subdirs else outdir
-            os.makedirs(image_dir, exist_ok=True)
-            image_path = os.path.join(image_dir, f'{seed:06d}.png')
-            if image_np.shape[2] == 1:
-                PIL.Image.fromarray(image_np[:, :, 0], 'L').save(image_path)
-            else:
-                PIL.Image.fromarray(image_np, 'RGB').save(image_path)
+        for path in torch.stack(gen_path).permute(1, 0, 2, 3, 4):
+            os.makedirs(path_to_save, exist_ok=True)
+            np.savez_compressed(f'{path_to_save}path{i}', path.detach().cpu().numpy())
+            dist.print0(f'done saving {i}th image path')
+            i += 1
+            if i == 50000:
+                dist.print0('finish 50000, breaking...')
+                break
 
+        if i == 50000:
+            dist.print0('finish 50000, breaking...')
+            break
+
+        dist.print0(f"finish {i} path so far...")
     # Done.
     torch.distributed.barrier()
     dist.print0('Done.')

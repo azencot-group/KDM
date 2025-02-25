@@ -233,6 +233,8 @@ class KoopmanModel(nn.Module):
 
     def sample(self, batch_size, device):
         xT = torch.randn((batch_size, 2)).to(device)
+
+
         t = (torch.ones((xT.shape[0])) * 1000 // self.time_steps).to(xT.device)
         zT = self.encoder_xT(xT, t)
         zt = zT
@@ -308,8 +310,9 @@ class OneStepKoopmanModel(nn.Module):
         xT_hat = None
         if self.rec_zT:
             xT_hat = self.decoder_xT(zT, t)
+
+        xt0_push_hat = self.decoder_x0(zt1_push, t)
         with torch.no_grad():
-            xt0_push_hat = self.decoder_x0(zt1_push, t)
             xT_hat_dx0 = self.decoder_x0(zT, t)
 
         return {'x0': x0, 'z0': z0, 'xt0_hat': xt0_hat, 'xt0_push_hat': xt0_push_hat, 'zt1_push': zt1_push,
@@ -322,7 +325,7 @@ class OneStepKoopmanModel(nn.Module):
         rec_loss = ((loss_components['x0'] - loss_components['xt0_hat']) ** 2).mean()
         latent_loss = ((loss_components['z0'] - loss_components['zt1_push']) ** 2).mean()
 
-        loss = rec_loss + latent_loss
+        loss = rec_loss + push_latent_loss + latent_loss
 
         rec_xT_loss = torch.tensor(0)
         if self.rec_zT:

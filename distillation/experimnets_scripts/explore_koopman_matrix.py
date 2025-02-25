@@ -1,5 +1,6 @@
 import torch
 from matplotlib import pyplot as plt
+from sklearn.decomposition import PCA
 
 from distillation.utils.display import plot_spectrum
 from koopman_model import OneStepKoopmanModel
@@ -42,6 +43,11 @@ plot_spectrum(K)
 
 # --- plot eigenfunctions --- #
 eig_val, eig_vec = np.linalg.eig(K)
+# sort eigvectors by the real value of the eigenvalues
+idx = np.argsort(eig_val.real)[::-1]
+eig_val = eig_val[idx]
+eig_vec = eig_vec[:, idx]
+
 eig_vec = torch.tensor(eig_vec).to('cuda').float()
 Xs, Ys = np.meshgrid(np.linspace(-5, 5, 100), np.linspace(-4, 4, 100))
 Xs, Ys = torch.tensor(Xs).cuda(), torch.tensor(Ys).cuda()
@@ -115,3 +121,40 @@ plt.xlabel("X Coordinate")
 plt.ylabel("Y Coordinate")
 plt.grid(True)
 plt.show()
+
+
+# --- TSNE of the Koopman space encodings --- #
+t = torch.ones((points.shape[0],)).to(points.device)
+zT = km.encoder_xT(torch.tensor(points).cuda().float(), t.cuda())
+
+# tsne plot of zT into 2 dimensions
+from sklearn.manifold import TSNE
+# Convert zT (Koopman encodings) to NumPy for t-SNE
+zT_np = zT.detach().cpu().numpy()[:3000]  # Move to CPU and convert to NumPy
+zT_label = labels[:3000]
+# Perform t-SNE to reduce to 2 dimensions
+tsne = PCA(n_components=2, random_state=42)
+zT_tsne = tsne.fit_transform(zT_np)
+
+# Plot the t-SNE results
+plt.figure(figsize=(8, 8))
+for cluster_id in range(n_clusters):
+    cluster_points = zT_np[zT_label == cluster_id]
+    x = cluster_points[:, 0][cluster_points[:, 0] < 1]
+    y = cluster_points[:, 1][cluster_points[:, 0] < 1]
+    plt.scatter(x, y, label=f'Square {cluster_id + 1}', alpha=0.6)
+
+# Formatting the plot
+plt.legend()
+plt.title("Points Grouped into Squares")
+plt.xlabel("X Coordinate")
+plt.ylabel("Y Coordinate")
+plt.grid(True)
+plt.show()
+
+# --- sparsity measure --- #
+print(f'out of {zT_np.shape[1]} coordinates')
+print(f'average number of unsparse coordinate {(zT_np > 0.000001).sum(axis=1).mean()}')
+print(f'standard deviation of the number of unsparse coordinate {(zT_np > 0.000001).sum(axis=1).std()}')
+print(f'maximum of the number of unsparse coordinate {(zT_np > 0.000001).sum(axis=1).max()}')
+print(f'minimum of the number of unsparse coordinate {(zT_np > 0.000001).sum(axis=1).min()}')
