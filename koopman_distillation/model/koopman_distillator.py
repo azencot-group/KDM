@@ -3,7 +3,7 @@ import torch.nn
 
 class KoopmanDistillOneStep(torch.nn.Module):
     def __init__(self, x0_observables_encoder, x_T_observables_encoder, x0_observables_decoder, koopman_operator,
-                 noisy_latent=0.2):
+                 rec_loss_type, noisy_latent=0.2):
         super(KoopmanDistillOneStep, self).__init__()
         self.x_0_observables_encoder = x0_observables_encoder
         self.x_T_observables_encoder = x_T_observables_encoder
@@ -11,8 +11,9 @@ class KoopmanDistillOneStep(torch.nn.Module):
         self.koopman_operator = koopman_operator
 
         self.noisy_latent = noisy_latent
+        self.rec_loss_type = rec_loss_type
 
-    def forward(self, x_0, x_T, cond=None):
+    def forward(self, x_0, x_T, cond=None, global_step=None):
         T = torch.ones((x_0.shape[0],)).to(x_0.device)  # no use in one step, just a placeholder
         t = torch.zeros((x_0.shape[0],)).to(x_0.device)  # no use in one step, just a placeholder
 

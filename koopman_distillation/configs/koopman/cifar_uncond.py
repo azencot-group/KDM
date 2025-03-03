@@ -1,4 +1,4 @@
-from koopman_distillation.utils.names import DistillationModels, Datasets
+from koopman_distillation.utils.names import DistillationModels, Datasets, RecLossType
 
 
 def load_arguments(parser) -> None:
@@ -20,15 +20,16 @@ def load_arguments(parser) -> None:
     parser.add_argument('--num_workers', type=int, default=6)
 
     # --- training --- #
-    parser.add_argument('--iterations', type=int, default=250)
+    parser.add_argument('--iterations', type=int, default=302)
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--print_every', type=float, default=1)
 
     # --- model --- #
     parser.add_argument('--distillation_model', type=str, default=DistillationModels.OneStepKOD)
+    parser.add_argument('--ema_rate', type=list[float], default=[0.999, 0.9999, 0.9999432189950708])
 
     # losses
-    parser.add_argument('--rec_loss_type', type=list[str], default=['l2', 'lpips', 'mixed'])
+    parser.add_argument('--rec_loss_type', type=str, default=RecLossType.BOTH)
 
     # --- sampling --- #
     parser.add_argument('--data_shape', type=list[int], default=(3, 32, 32))

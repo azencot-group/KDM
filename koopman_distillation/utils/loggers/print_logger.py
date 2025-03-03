@@ -7,7 +7,6 @@ from pprint import pprint
 
 class PrintLogger(BaseLogger):
 
-
     def __init__(self, *args, **kwargs):
         super(PrintLogger, self).__init__(*args, **kwargs)
         from PIL.Image import Image
@@ -44,9 +43,12 @@ class PrintLogger(BaseLogger):
         print('tags:')
         pprint(tags)
 
-    def log_name_params(self, name : str, params: Any):
+    def log_name_params(self, name: str, params: Any):
         print(f'{name}:')
         pprint(params)
+
+    def info(self, msg: str):
+        print(msg)
 
 
 class LoggerL(PrintLogger):

@@ -271,7 +271,7 @@ class AttentionBlock(nn.Module):
             num_heads=1,
             num_head_channels=-1,
             use_checkpoint=False,
-            attention_type="flash",
+            attention_type="legacy",
             encoder_channels=None,
             dims=2,
             channels_last=False,

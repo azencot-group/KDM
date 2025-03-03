@@ -52,6 +52,7 @@ def main(args):
             output_dir=workdir,
             device=torch.device('cuda'),
             logger=logger,
+            ema_rate=args.ema_rate,
         ).train()
 
 

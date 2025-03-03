@@ -39,6 +39,9 @@ class CompositeLogger(BaseLogger):
         for logger in self.loggers:
             logger.add_tags(tags)
 
-    def log_name_params(self, name : str, params: Any):
+    def log_name_params(self, name: str, params: Any):
         for logger in self.loggers:
             logger.log_name_params(name, params)
+
+    def info(self, msg: str):
+        print(msg)

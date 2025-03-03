@@ -1,14 +1,13 @@
 import pickle
 import os
 
-import PIL
 import scipy
 import torch
 import tqdm
 
-import dnnlib
 import numpy as np
 
+from edm.dnnlib.util import open_url
 from koopman_distillation.data.data_loading.data_loaders import load_data_for_testing
 
 
@@ -24,7 +23,7 @@ def calculate_inception_stats(image_path, num_workers=6, device=torch.device('cu
     detector_url = 'https://api.ngc.nvidia.com/v2/models/nvidia/research/stylegan3/versions/1/files/metrics/inception-2015-12-05.pkl'
     detector_kwargs = dict(return_features=True)
     feature_dim = 2048
-    with dnnlib.util.open_url(detector_url) as f:
+    with open_url(detector_url) as f:
         detector_net = pickle.load(f).to(device)
 
     dataset_obj = load_data_for_testing(image_path)
@@ -61,7 +60,7 @@ def calculate_fid_from_inception_stats(mu, sigma, mu_ref, sigma_ref):
 
 
 def calculate_fid(ref_path, image_path, batch_size=32):
-    with dnnlib.util.open_url(ref_path) as f:
+    with open_url(ref_path) as f:
         ref = dict(np.load(f))
 
     print('calculating mu and sigma...')

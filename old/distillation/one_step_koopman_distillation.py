@@ -2,9 +2,7 @@ import time
 import torch
 import matplotlib.pyplot as plt
 import warnings
-
-from koopman_distillation.experiments.linear_manifold.data_generation import get_non_cont_manifold_data
-from old.distillation import OneStepKoopmanModel
+from old.distillation.koopman_model import OneStepKoopmanModel
 import numpy as np
 
 # ------- init -------
@@ -20,16 +18,16 @@ else:
 torch.manual_seed(42)
 
 # ------- data -------
-data = get_non_cont_manifold_data()
+data = np.load('sol.npy')
 
 # training arguments
 lr = 0.0003
 batch_size = 4096
-iterations = 1001
+iterations = 2301
 print_every = 50
 time_steps = 10
-hidden_dim = 512
-noisy_latent = 0.2
+hidden_dim = 256
+noisy_latent = 0.4
 rec_xT_loss = False
 # push_list = ['all_linear', 'sample_linear', 'batch_linear']
 push = 'all_linear'
@@ -45,15 +43,15 @@ km = km.cuda()
 optim = torch.optim.Adam(km.parameters(), lr=lr)
 
 # add data to dataloader
-train_loader = torch.utils.data.DataLoader(torch.tensor(np.stack([np.stack([d[0], d[1]]) for d in data])),
-                                           batch_size=batch_size, shuffle=True, drop_last=True)
+train_loader = torch.utils.data.DataLoader(torch.tensor(data.transpose(1, 0, 2)), batch_size=batch_size, shuffle=True,
+                                           drop_last=True)
 
 # train
 start_time = time.time()
 for i in range(iterations):
     for batch in train_loader:
-        x0 = batch[:, 1].cuda().float()
-        xT = batch[:, 0].cuda().float()
+        x0 = batch[:, -1].cuda()
+        xT = batch[:, 0].cuda()
 
         optim.zero_grad()
 

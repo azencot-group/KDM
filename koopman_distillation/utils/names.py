@@ -5,4 +5,11 @@ class Datasets:
 
 class DistillationModels:
     OneStepKOD = "Koopman Operator Distillation"
-    ConsistencyModels = "Consistency Distillation Model"
+    ConsistencyModel = "Consistency Distillation Model"
+
+
+# --- models configurations --- #
+class RecLossType:
+    L2 = "L2"
+    LPIPS = "LPIPS"
+    BOTH = "BOTH"

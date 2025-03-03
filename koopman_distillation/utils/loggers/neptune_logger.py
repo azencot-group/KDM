@@ -82,5 +82,5 @@ class NeptuneLogger(BaseLogger):
         params = convert_no_basic_to_str_from_any(params)
         self.run[name] = params
 
-    def info(self, message: str):
-        print(message)
+    def info(self, msg: str):
+        print(msg)
