@@ -1,9 +1,12 @@
-from koopman_distillation.utils.names import DistillationModels, Datasets
+from koopman_distillation.utils.names import DistillationModels, Datasets, RecLossType
 
 
 def load_arguments(parser) -> None:
     # --- general --- #
     parser.add_argument('--experiment_name', type=str, default="check_check", help='The experiment name')
+    parser.add_argument('--neptune', type=bool, default=False)
+    parser.add_argument('--neptune_projects', type=str, default='azencot-group/koopman-dis')
+    parser.add_argument('--tags', type=list[str], default=['checkerboard'])
 
     # --- artifacts --- #
     parser.add_argument('--output_prefix_path', type=str,
@@ -17,16 +20,20 @@ def load_arguments(parser) -> None:
     parser.add_argument('--num_workers', type=int, default=6)
 
     # --- training --- #
-    parser.add_argument('--iterations', type=int, default=1001)
+    parser.add_argument('--iterations', type=int, default=101)
     parser.add_argument('--lr', type=float, default=0.0003)
-    parser.add_argument('--print_every', type=float, default=50)
+    parser.add_argument('--print_every', type=float, default=2)
 
     # --- model --- #
     parser.add_argument('--distillation_model', type=str, default=DistillationModels.OneStepKOD)
+    parser.add_argument('--ema_rate', type=list[float], default=[])
 
     # --- sampling --- #
-    parser.add_argument('--iterations', type=tuple[int], default=(2,))
+    parser.add_argument('--data_shape', type=tuple[int], default=(2,))
 
     # --- koopman parameters --- #
     parser.add_argument('--hidden_dim', type=int, default=256)
     parser.add_argument('--input_dim', type=int, default=2)
+
+    # losses
+    parser.add_argument('--rec_loss_type', type=str, default=RecLossType.L2)

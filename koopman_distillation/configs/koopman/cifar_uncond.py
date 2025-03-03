@@ -21,7 +21,7 @@ def load_arguments(parser) -> None:
 
     # --- training --- #
     parser.add_argument('--iterations', type=int, default=302)
-    parser.add_argument('--lr', type=float, default=0.001)
+    parser.add_argument('--lr', type=float, default=0.003)
     parser.add_argument('--print_every', type=float, default=1)
 
     # --- model --- #

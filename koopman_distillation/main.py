@@ -14,6 +14,8 @@ from koopman_distillation.utils.loading_models import create_distillation_model,
 from koopman_distillation.utils.loggers.logging import create_workdir, log_config_and_tags, print_model_params
 
 
+# todo - add quant and qual evaluation of the checkerboard model
+
 def main(args):
     # --- create logging --- #
     with CompositeLogger([NeptuneLogger(project=args.neptune_projects)]) if args.neptune \
