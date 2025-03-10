@@ -21,4 +21,4 @@ echo -e "SLURM_JOB_NODELIST:\t" $SLURM_JOB_NODELIST "\n\n"
 ### Start your src_code below ####
 module load anaconda				### load anaconda module (must be present when working with conda environments)
 source activate edm				### activate a conda environment, replace my_env with your conda environment
-python main.py --config_name koopman/cifar_uncond --neptune True --rec_loss_type LPIPS --lr 0.0003
+python main.py --config_name koopman/cifar_uncond --neptune True --rec_loss_type LPIPS --lr 0.0003 --out_channels 1 --noisy_latent 0.4

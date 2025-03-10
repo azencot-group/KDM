@@ -1,5 +1,6 @@
 class Datasets:
     Cifar10 = "Cifar10"
+    Cifar10FastOneStepLoading = "Cifar10FastOneStepLoading"
     Checkerboard = "Checkerboard"
 
 

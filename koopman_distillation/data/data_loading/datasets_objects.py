@@ -35,6 +35,26 @@ class Cifar10Dataset(torch.utils.data.Dataset):
         return x0, xT, ix
 
 
+class Cifar10DatasetFastLoading(torch.utils.data.Dataset):
+    """
+    We upload the data into the RAM memory to speed up the training process.
+    """
+
+    def __init__(self, path):
+        # parse all the paths in path
+        self.dataset = np.load(path)
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, ix):
+        dynamics = self.dataset[ix]
+        x0: Tensor = torch.tensor(dynamics[0]).float()
+        xT: Tensor = torch.tensor(dynamics[1]).float()
+
+        return x0, xT, ix
+
+
 class FIDCifar10Dataset(torch.utils.data.Dataset):
     def __init__(self, path):
         # parse all the paths in path

@@ -13,9 +13,12 @@ def load_arguments(parser) -> None:
                         default="/home/bermann/functional_mapping/koopman_distillation/results")
 
     # --- data --- #
-    parser.add_argument('--dataset', type=str, default=Datasets.Cifar10)
+    parser.add_argument('--dataset', type=str, default=Datasets.Cifar10FastOneStepLoading)
+    # fast loading require the path to the npy file
     parser.add_argument('--datapath', type=str,
-                        default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond')
+                        # default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond')
+                        # default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_edm_onestep')
+                        default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_dataset.npy')
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--num_workers', type=int, default=6)
 

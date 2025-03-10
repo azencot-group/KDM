@@ -295,7 +295,12 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
     # dist.print0(f'Generating {len(seeds)} images to "{outdir}"...')
     i = 0
     # for batch_seeds in tqdm.tqdm(rank_batches, unit='batch', disable=(dist.get_rank() != 0)):
-    path_to_save = '/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_edm_onestep/'
+    # todo ----- my parameters -----
+    path_to_save = '/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_text_data/'
+    how_much_to_gen = 100
+    seed = 123
+    torch.manual_seed(seed)
+    # change seed
     while True:
         torch.distributed.barrier()
         batch_size = 256
@@ -322,11 +327,11 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
             np.savez_compressed(f'{path_to_save}path{i}', path.detach().cpu().numpy())
             dist.print0(f'done saving {i}th image path')
             i += 1
-            if i == 50000:
+            if i == how_much_to_gen:
                 dist.print0('finish 50000, breaking...')
                 break
 
-        if i == 50000:
+        if i == how_much_to_gen:
             dist.print0('finish 50000, breaking...')
             break
 

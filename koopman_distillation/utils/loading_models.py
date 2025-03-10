@@ -94,11 +94,12 @@ def create_koopman_model(args):
             rec_loss_type=args.rec_loss_type,
         )
 
-    elif args.dataset == Datasets.Cifar10:
+    elif args.dataset in [Datasets.Cifar10, Datasets.Cifar10FastOneStepLoading]:
         return OneStepKoopmanCifar10(img_resolution=32, rec_loss_type=args.rec_loss_type,
                                      out_channels=args.out_channels,
                                      noisy_latent=args.noisy_latent,
                                      )
+
 
     else:
         raise NotImplementedError(f"Dataset {args.dataset} not implemented")
