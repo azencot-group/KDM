@@ -9,10 +9,11 @@ from koopman_distillation.utils.loggers.logging import plot_samples
 
 
 class TrainLoop:
-    def __init__(self, model, train_data, batch_size, device, output_dir, logger, ema_rate, iterations=1001, lr=0.0003,
-                 print_every=50, data_shape=(2), teach_model=False):
+    def __init__(self, model, train_data, test_data, batch_size, device, output_dir, logger, ema_rate, iterations=1001,
+                 lr=0.0003, print_every=50, data_shape=(2), teach_model=False):
         self.model = model
         self.train_data = train_data
+        self.test_data = test_data
         self.device = device
         self.iterations = iterations
         self.print_every = print_every
@@ -52,13 +53,16 @@ class TrainLoop:
                 # if self.TModel_exists:
                 #     self._update_target_ema(global_step)
 
-            if (i + 1) % self.print_every == 0:
+                break # todo delete
+
+            if (i + 1) % self.print_every == 0 or True:  # todo delete
                 self.model.eval()
-                self.evaluation(start_time, losses, i + 1)
+                self.evaluation_of_test_data(global_step, i + 1)
+                self.evaluation_of_train_and_generation(start_time, losses, i + 1)
                 start_time = time.time()
                 self.model.train()
 
-    def evaluation(self, start_time, losses, iteration):
+    def evaluation_of_train_and_generation(self, start_time, losses, iteration):
         # log the losses
         elapsed = time.time() - start_time
         self.logger.log(f'test/elapsed', elapsed * 1000 / self.print_every, iteration)
@@ -80,6 +84,24 @@ class TrainLoop:
             self.logger.log('fid', fid, iteration)
             # save the model
             torch.save(self.model, f'{self.output_dir}/model_{iteration}.pt')
+
+    def evaluation_of_test_data(self, global_step, iteration):
+        for test_batch in self.test_data:
+            xt, xT, _ = test_batch
+            xt = xt.to(self.device)
+            xT = xT.to(self.device)
+
+            self.optimizer.zero_grad()
+
+            # return all components relevant for loss calculation
+            fw_comp = self.model(x_0=xt, x_T=xT, global_step=global_step)
+
+            # calculate loss
+            test_losses = self.model.loss(fw_comp)
+
+            # report losses
+            for k, v in test_losses.items():
+                self.logger.log('test/' + k, v.item(), iteration)
 
     def _update_target_ema(self, global_step):
         target_ema, scales = self.model.ema_scale_fn(global_step)

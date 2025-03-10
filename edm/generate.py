@@ -14,6 +14,8 @@ import click
 import pickle
 import numpy as np
 import torch
+
+import edm
 from torch_utils import distributed as dist
 
 
@@ -268,11 +270,16 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
     python generate.py --outdir=out --seeds=0-63 --batch=64 \\
         --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-cond-vp.pkl
 
+    python generate.py --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-uncond-vp.pkl
+
+
     \b
     # Generate 1024 images using 2 GPUs
     torchrun --standalone --nproc_per_node=2 generate.py --outdir=out --seeds=0-999 --batch=64 \\
         --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-cond-vp.pkl
     """
+
+
     dist.init()
     num_batches = ((len(seeds) - 1) // (max_batch_size * dist.get_world_size()) + 1) * dist.get_world_size()
     all_batches = torch.as_tensor(seeds).tensor_split(num_batches)
@@ -296,9 +303,9 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
     i = 0
     # for batch_seeds in tqdm.tqdm(rank_batches, unit='batch', disable=(dist.get_rank() != 0)):
     # todo ----- my parameters -----
-    path_to_save = '/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_text_data/'
-    how_much_to_gen = 100
-    seed = 123
+    path_to_save = '/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_test_data/'
+    how_much_to_gen = 1000
+    seed = 3165
     torch.manual_seed(seed)
     # change seed
     while True:
@@ -328,11 +335,11 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
             dist.print0(f'done saving {i}th image path')
             i += 1
             if i == how_much_to_gen:
-                dist.print0('finish 50000, breaking...')
+                dist.print0(f'finish {how_much_to_gen}, breaking...')
                 break
 
         if i == how_much_to_gen:
-            dist.print0('finish 50000, breaking...')
+            dist.print0(f'finish {how_much_to_gen}, breaking...')
             break
 
         dist.print0(f"finish {i} path so far...")

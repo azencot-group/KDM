@@ -16,6 +16,7 @@ def load_arguments(parser) -> None:
     parser.add_argument('--dataset', type=str, default=Datasets.Checkerboard)
     parser.add_argument('--datapath', type=str,
                         default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/checkerboard/sol.npy')
+    parser.add_argument('--datapath_test', type=str, default='')
     parser.add_argument('--batch_size', type=int, default=4096)
     parser.add_argument('--num_workers', type=int, default=6)
 

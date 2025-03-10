@@ -36,9 +36,10 @@ def main(args):
 
         # --- load data --- #
         logger.info("creating data loader...")
-        train_data = load_data(
+        train_data, test_data = load_data(
             dataset=args.dataset,
             dataset_path=args.datapath,
+            dataset_path_test=args.datapath_test,
             batch_size=args.batch_size,
             num_workers=args.num_workers,
         )
@@ -47,6 +48,7 @@ def main(args):
         TrainLoop(
             model=dsm,
             train_data=train_data,
+            test_data=test_data,
             iterations=args.iterations,
             lr=args.lr,
             print_every=args.print_every,

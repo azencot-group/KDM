@@ -19,6 +19,7 @@ def load_arguments(parser) -> None:
                         # default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond')
                         # default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_edm_onestep')
                         default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_dataset.npy')
+    parser.add_argument('--datapath_test', type=str, default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_test_data')
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--num_workers', type=int, default=6)
 
