@@ -948,8 +948,8 @@ class OneStepKoopmanCifar10(torch.nn.Module):
                                                 resample_filter=resample_filter)
 
         self.x0_observables_decoder = SongUNet(img_resolution=img_resolution,
-                                               in_channels=in_channels,
-                                               out_channels=out_channels,
+                                               in_channels=out_channels,
+                                               out_channels=in_channels,
                                                label_dim=label_dim,
                                                augment_dim=augment_dim,
                                                model_channels=model_channels,
@@ -983,7 +983,7 @@ class OneStepKoopmanCifar10(torch.nn.Module):
                                                 decoder_type=decoder_type,
                                                 resample_filter=resample_filter)
 
-        self.koopman_operator = torch.nn.Linear(3072, 3072)
+        self.koopman_operator = torch.nn.Linear(32 * 32 * out_channels, 32 * 32 * out_channels)
 
     def forward(self, x_0, x_T, cond=None, global_step=None):
         T = torch.ones((x_0.shape[0],)).to(x_0.device)  # no use in one step, just a placeholder

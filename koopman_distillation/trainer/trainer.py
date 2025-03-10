@@ -66,10 +66,10 @@ class TrainLoop:
             self.logger.log(k, v.item(), iteration)
 
         # plot qualitative results
-        # plot_samples(self.logger, self.model, self.batch_size, self.device, self.data_shape, self.output_dir, iteration)
+        plot_samples(self.logger, self.model, self.batch_size, self.device, self.data_shape, self.output_dir, iteration)
 
         # evaluate fid
-        if iteration % (self.print_every * 50) == 0 and self.data_shape[0] == 3:
+        if iteration % (self.print_every * 100) == 0 and self.data_shape[0] == 3:
             fid = sample_and_calculate_fid(model=self.model,
                                            data_shape=self.data_shape,
                                            num_samples=50000,
@@ -78,6 +78,8 @@ class TrainLoop:
                                            epoch=iteration,
                                            image_dir=self.output_dir)
             self.logger.log('fid', fid, iteration)
+            # save the model
+            torch.save(self.model, f'{self.output_dir}/model_{iteration}.pt')
 
     def _update_target_ema(self, global_step):
         target_ema, scales = self.model.ema_scale_fn(global_step)
@@ -87,6 +89,7 @@ class TrainLoop:
                 list(self.model.model.parameters()),
                 rate=target_ema,
             )
+
     def _update_ema(self):
         for rate, params in zip(self.ema_rate, self.ema_params):
             update_ema(params, list(self.model.model.parameters()), rate=rate)

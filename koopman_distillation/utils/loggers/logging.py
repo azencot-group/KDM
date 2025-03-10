@@ -17,6 +17,7 @@ def create_workdir(args):
     workdir = get_workdir(args.output_prefix_path, args.experiment_name)
     Path(workdir).mkdir(parents=True, exist_ok=True)
     torch.save(args, f'{workdir}/args.pth')
+    args.workdir = workdir
 
     return workdir
 

@@ -91,11 +91,14 @@ def create_koopman_model(args):
             x_T_observables_encoder=Encoder(input_dim=args.input_dim, hidden_dim=args.hidden_dim),
             x0_observables_decoder=Decoder(output_dim=args.input_dim, hidden_dim=args.hidden_dim),
             koopman_operator=torch.nn.Linear(args.hidden_dim, args.hidden_dim),
-            rec_loss_type=args.rec_loss_type
+            rec_loss_type=args.rec_loss_type,
         )
 
     elif args.dataset == Datasets.Cifar10:
-        return OneStepKoopmanCifar10(img_resolution=32, rec_loss_type=args.rec_loss_type)
+        return OneStepKoopmanCifar10(img_resolution=32, rec_loss_type=args.rec_loss_type,
+                                     out_channels=args.out_channels,
+                                     noisy_latent=args.noisy_latent,
+                                     )
 
     else:
         raise NotImplementedError(f"Dataset {args.dataset} not implemented")

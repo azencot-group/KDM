@@ -23,6 +23,7 @@ def main(args):
         # --- create working directory and save the run configs for reproduction--- #
         workdir = create_workdir(args)
         log_config_and_tags(args, logger, name='distillation')
+        logger.info(f"working directory: {workdir}")
 
         # --- create models --- #
         logger.info("creating observables encoder model...")  # create the main multimodal diffusion bridge framework
