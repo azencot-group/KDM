@@ -26,7 +26,7 @@ def load_arguments(parser) -> None:
     parser.add_argument('--print_every', type=float, default=2)
 
     # --- model --- #
-    parser.add_argument('--distillation_model', type=str, default=DistillationModels.OneStepKOD)
+    parser.add_argument('--distillation_model', type=str, default=DistillationModels.KoopmanDistillOneStepDMD)
     parser.add_argument('--ema_rate', type=list[float], default=[])
 
     # --- sampling --- #

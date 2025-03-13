@@ -35,8 +35,8 @@ def print_model_params(logger, model):
     logger.log_name_params('config/params_num', params_num)
 
 
-def plot_samples(logger, model, batch_size, device, data_shape, output_dir, iteration):
-    x0_sample = model.sample(batch_size, device, data_shape=data_shape)
+def plot_samples(logger, model, batch_size, device, data_shape, output_dir, iteration, data_batch):
+    x0_sample = model.sample(batch_size, device, data_shape=data_shape, data_batch=data_batch)
     if data_shape == (2,):
         fig = plt.figure(figsize=(7, 9))
         x0_sample = x0_sample[0].detach().cpu().numpy()

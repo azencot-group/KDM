@@ -285,11 +285,11 @@ class FunctionalLossV0:
         rnd_normal = torch.randn([images.shape[0], 1, 1, 1], device=images.device)
         sigma = (rnd_normal * self.P_std + self.P_mean).exp()
 
-        sigma = torch.ones_like(sigma)  # todo - delete
+        sigma = torch.ones_like(sigma)  #
 
-        # weight = (sigma ** 2 + self.sigma_data ** 2) / (sigma * self.sigma_data) ** 2 todo - return
+        # weight = (sigma ** 2 + self.sigma_data ** 2) / (sigma * self.sigma_data) ** 2
 
-        # y, augment_labels = augment_pipe(images) if augment_pipe is not None else (images, None) todo - return
+        # y, augment_labels = augment_pipe(images) if augment_pipe is not None else (images, None)
         n = torch.randn_like(images) * sigma
 
         # project images to latent space to get their coefficients
@@ -314,9 +314,9 @@ class FunctionalLossV0:
         est_images = net.decode_image(est_l_images, sigma.flatten(), labels)
 
         # calculate the loss
-        loss_diffusion = ((l_images - est_l_images) ** 2)  # todo  - return the weight *
-        loss_decode = ((images - est_images) ** 2)  # todo  - return the weight *
-        # todo - adding perceptual loss
+        loss_diffusion = ((l_images - est_l_images) ** 2)
+        loss_decode = ((images - est_images) ** 2)
+
 
         loss = (loss_diffusion + loss_decode) / 2
 

@@ -6,6 +6,7 @@ class Datasets:
 
 class DistillationModels:
     OneStepKOD = "Koopman Operator Distillation"
+    KoopmanDistillOneStepDMD = "Koopman Operator Distillation DMD"
     ConsistencyModel = "Consistency Distillation Model"
 
 
@@ -14,3 +15,5 @@ class RecLossType:
     L2 = "L2"
     LPIPS = "LPIPS"
     BOTH = "BOTH"
+
+

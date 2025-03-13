@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ################################################################################################
-### sbatch configuration parameters must start with #SBATCH and must precede any other commands.
+### cifar configuration parameters must start with #SBATCH and must precede any other commands.
 ### To ignore, just add another # - like so: ##SBATCH
 ################################################################################################
 

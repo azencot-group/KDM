@@ -914,6 +914,7 @@ class OneStepKoopmanCifar10(torch.nn.Module):
                  sigma_max=float('inf'),  # Maximum supported noise level.
                  noisy_latent=0.2,
                  rec_loss_type=RecLossType.BOTH,
+                 nonlinear_koopman=False,
                  ):
         super().__init__()
 
@@ -983,7 +984,26 @@ class OneStepKoopmanCifar10(torch.nn.Module):
                                                 decoder_type=decoder_type,
                                                 resample_filter=resample_filter)
 
-        self.koopman_operator = torch.nn.Linear(32 * 32 * out_channels, 32 * 32 * out_channels)
+        if nonlinear_koopman:
+            self.koopman_operator = SongUNet(img_resolution=img_resolution,
+                                             in_channels=out_channels,
+                                             out_channels=out_channels,
+                                             label_dim=label_dim,
+                                             augment_dim=augment_dim,
+                                             model_channels=model_channels,
+                                             channel_mult=channel_mult,
+                                             channel_mult_emb=channel_mult_emb,
+                                             num_blocks=num_blocks,
+                                             attn_resolutions=attn_resolutions,
+                                             dropout=dropout,
+                                             label_dropout=label_dropout,
+                                             embedding_type=embedding_type,
+                                             channel_mult_noise=channel_mult_noise,
+                                             encoder_type=encoder_type,
+                                             decoder_type=decoder_type,
+                                             resample_filter=resample_filter)
+        else:
+            self.koopman_operator = torch.nn.Linear(32 * 32 * out_channels, 32 * 32 * out_channels)
 
     def forward(self, x_0, x_T, cond=None, global_step=None):
         T = torch.ones((x_0.shape[0],)).to(x_0.device)  # no use in one step, just a placeholder
@@ -996,7 +1016,10 @@ class OneStepKoopmanCifar10(torch.nn.Module):
         z_0_noisy = z_0 + torch.randn_like(z_0) * self.noisy_latent
         z_T_noisy = z_T + torch.randn_like(z_T) * self.noisy_latent
 
-        z_0_pushed = self.koopman_operator(z_T_noisy.reshape(x_0.shape[0], -1)).reshape(z_0.shape)
+        if isinstance(self.koopman_operator, SongUNet):
+            z_0_pushed = self.koopman_operator(z_T_noisy, T, T)
+        else:
+            z_0_pushed = self.koopman_operator(z_T_noisy.reshape(x_0.shape[0], -1)).reshape(z_0.shape)
 
         with torch.no_grad():
             x_0_pushed_hat = self.x0_observables_decoder(z_0_noisy, t, t)
@@ -1034,7 +1057,7 @@ class OneStepKoopmanCifar10(torch.nn.Module):
                 'rec_loss_lpips_x_0': rec_loss_lpips_x_0}
 
     def sample(self, batch_size, device, data_shape, sample_iter=1):
-        x_T = torch.randn((batch_size, *data_shape)).to(device) * 80
+        x_T = torch.randn((batch_size, *data_shape)).to(device)
 
         T = torch.ones((x_T.shape[0],)).to(x_T.device)
         t = torch.zeros((x_T.shape[0],)).to(x_T.device)

@@ -86,7 +86,7 @@ def training_loop(
     optimizer = edm.dnnlib.util.construct_class_by_name(params=net.parameters(), **optimizer_kwargs) # subclass of torch.optim.Optimizer
     augment_pipe = edm.dnnlib.util.construct_class_by_name(**augment_kwargs) if augment_kwargs is not None else None # training.augment.AugmentPipe
     # ddp = torch.nn.parallel.DistributedDataParallel(net, device_ids=[device])
-    ddp = net # todo remove this line
+    ddp = net
     ema = copy.deepcopy(net).eval().requires_grad_(False)
 
     # Resume training from previous snapshot.
