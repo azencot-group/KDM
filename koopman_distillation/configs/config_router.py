@@ -13,6 +13,10 @@ def get_configs():
         from koopman_distillation.configs.koopman.cifar_uncond import load_arguments
         load_arguments(parser)
 
+    elif 'koopman/cifar_uncond_dmdkoopman' == parser.parse_known_args()[0].config_name:
+        from koopman_distillation.configs.koopman.cifar_uncond_dmdkoopman import load_arguments
+        load_arguments(parser)
+
     elif 'koopman/checkerboard_uncond' == parser.parse_known_args()[0].config_name:
         from koopman_distillation.configs.koopman.checkerboard_uncond import load_arguments
         load_arguments(parser)

@@ -44,7 +44,7 @@ def plot_samples(logger, model, batch_size, device, data_shape, output_dir, iter
         plt.scatter(x0_sample[:, 0], x0_sample[:, 1], c='r', s=1)
         logger.log('scatter_2d', fig)
     else:
-        for i in range(3):
+        for i in range(1):
             fig = plt.figure(figsize=(7, 9))
             # plot the generated image
             img = translate_to_image_format(x0_sample[0][i].unsqueeze(dim=0))[0]

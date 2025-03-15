@@ -71,12 +71,19 @@ def calculate_fid(ref_path, image_path, batch_size=32):
     return fid
 
 
-def sample_and_calculate_fid(model, data_shape, num_samples, device, batch_size, epoch, image_dir):
+def sample_and_calculate_fid(model, data_shape, num_samples, device, batch_size, epoch, image_dir, data_loader):
     i = 0
     output_dir = image_dir + '/samples'
     os.makedirs(output_dir, exist_ok=True)
+    data_iter = iter(data_loader)
     while True:
-        x0_sample = model.sample(batch_size, device, data_shape)
+        try:
+            batch = next(data_iter)
+        except StopIteration:
+            # If data_iter is exhausted, reinitialize it
+            data_iter = iter(data_loader)
+            batch = next(data_iter)  # Try again after reinitialization
+        x0_sample = model.sample(batch_size, device, data_shape, data_batch=batch)
         images = x0_sample[0].detach().cpu().numpy()
         for img in images:
             np.savez_compressed(f'{output_dir}/img{i}', img)

@@ -70,27 +70,28 @@ class TrainLoop:
 
         # plot qualitative results
         plot_samples(self.logger, self.model, self.batch_size, self.device, self.data_shape, self.output_dir, iteration,
-                     next(iter(self.train_data)))
+                     next(iter(copy.deepcopy(self.train_data))))
 
         # evaluate fid for cifar10
         if iteration % (self.print_every * 100) == 0 and self.data_shape[0] == 3:
+            torch.save(self.model, f'{self.output_dir}/model.pt')
             fid = sample_and_calculate_fid(model=self.model,
                                            data_shape=self.data_shape,
                                            num_samples=50000,
                                            device=self.device,
                                            batch_size=self.batch_size,
                                            epoch=iteration,
-                                           image_dir=self.output_dir)
+                                           image_dir=self.output_dir,
+                                           data_loader=copy.deepcopy(self.train_data))
             self.logger.log('fid', fid, iteration)
             # save the model
-            torch.save(self.model, f'{self.output_dir}/model.pt')
 
         # checkerboard evaluation
         elif iteration % (self.print_every * 10) == 0 and self.data_shape[0] == 2:
+            torch.save(self.model, f'{self.output_dir}/model.pt')
             wess_distance = measure_wess_distance(self.model, self.device, self.train_data, num_samples=40000)
             self.logger.log('wess_distance', wess_distance, iteration)
             # save the model
-            torch.save(self.model, f'{self.output_dir}/model.pt')
 
     def evaluation_of_test_data(self, global_step, iteration):
         if self.test_data is None:

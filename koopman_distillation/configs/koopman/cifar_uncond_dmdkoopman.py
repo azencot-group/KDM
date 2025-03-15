@@ -3,10 +3,10 @@ from koopman_distillation.utils.names import DistillationModels, Datasets, RecLo
 
 def load_arguments(parser) -> None:
     # --- general --- #
-    parser.add_argument('--experiment_name', type=str, default="cifar_uncond", help='The experiment name')
+    parser.add_argument('--experiment_name', type=str, default="cifar_uncond_dmdkoopman", help='The experiment name')
     parser.add_argument('--neptune', type=bool, default=False)
     parser.add_argument('--neptune_projects', type=str, default='azencot-group/koopman-dis')
-    parser.add_argument('--tags', type=list[str], default=['koopman'])
+    parser.add_argument('--tags', type=list[str], default=['koopman_dmd'])
 
     # --- artifacts --- #
     parser.add_argument('--output_prefix_path', type=str,
@@ -28,7 +28,7 @@ def load_arguments(parser) -> None:
     parser.add_argument('--print_every', type=float, default=1)
 
     # --- model --- #
-    parser.add_argument('--distillation_model', type=str, default=DistillationModels.OneStepKOD)
+    parser.add_argument('--distillation_model', type=str, default=DistillationModels.KoopmanDistillOneStepDMD)
     parser.add_argument('--ema_rate', type=list[float], default=[0.999, 0.9999, 0.9999432189950708])
     parser.add_argument('--out_channels', type=int, default=1)
     parser.add_argument('--nonlinear_koopman', type=bool, default=False)
