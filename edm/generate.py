@@ -10,13 +10,24 @@
 
 import os
 import re
+import sys
+
 import click
 import pickle
 import numpy as np
 import torch
 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append('./')
+sys.path.append('../')
+sys.path.append('../../')
+sys.path.append('../../../')
+
+
 import edm
 from torch_utils import distributed as dist
+
+
 
 
 # ----------------------------------------------------------------------------
@@ -303,8 +314,8 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
     i = 0
     # for batch_seeds in tqdm.tqdm(rank_batches, unit='batch', disable=(dist.get_rank() != 0)):
     # todo ----- my parameters -----
-    path_to_save = '/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_test_data/'
-    how_much_to_gen = 1000
+    path_to_save = '/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_400k/'
+    how_much_to_gen = 400000
     seed = 3165
     torch.manual_seed(seed)
     # change seed

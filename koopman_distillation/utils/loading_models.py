@@ -6,7 +6,8 @@ import torch.nn
 from edm.dnnlib.util import open_url
 from koopman_distillation.model.koopman_distillator import KoopmanDistillOneStep, KoopmanDistillOneStepDMD
 from koopman_distillation.model.modules.model_checkerboard import Encoder, Decoder
-from koopman_distillation.model.modules.model_cifar10 import OneStepKoopmanCifar10, SongUNet, OneStepKoopmanCifar10DMD
+from koopman_distillation.model.modules.model_cifar10 import OneStepKoopmanCifar10, SongUNet, OneStepKoopmanCifar10DMD, \
+    OneStepKoopmanCifar10DMDPredictMatrix
 from koopman_distillation.other_methods.consistency_models.models.consistency_model import ConsistencyModel
 from koopman_distillation.other_methods.consistency_models.models.diffusion import KarrasDenoiser
 from koopman_distillation.other_methods.consistency_models.models.ema import create_ema_and_scales_fn
@@ -19,6 +20,9 @@ def create_distillation_model(model_type: DistillationModels, args):
 
     elif model_type == DistillationModels.KoopmanDistillOneStepDMD:
         return create_dmd_koopman_model(args)
+
+    elif model_type == DistillationModels.OneStepKoopmanCifar10DMDPredictMatrix:
+        return create_dmd_koopman_model_matrix(args)
 
     elif model_type == DistillationModels.ConsistencyModel:
         return create_cm_model(args)
@@ -46,6 +50,8 @@ def create_koopman_model(args):
         return OneStepKoopmanCifar10(img_resolution=32, rec_loss_type=args.rec_loss_type,
                                      out_channels=args.out_channels,
                                      noisy_latent=args.noisy_latent,
+                                     noisy_data=args.noisy_data,
+                                     mixup=args.mixup,
                                      nonlinear_koopman=args.nonlinear_koopman,
                                      )
 
@@ -69,6 +75,31 @@ def create_dmd_koopman_model(args):
                                         noisy_latent=args.noisy_latent,
                                         nonlinear_koopman=args.nonlinear_koopman,
                                         )
+
+    else:
+        raise NotImplementedError(f"Dataset {args.dataset} not implemented")
+
+
+def create_dmd_koopman_model_matrix(args):
+    if args.dataset == Datasets.Checkerboard:
+        return KoopmanDistillOneStepDMD(
+            x0_observables_encoder=Encoder(input_dim=args.input_dim, hidden_dim=args.hidden_dim),
+            x_T_observables_encoder=Encoder(input_dim=args.input_dim, hidden_dim=args.hidden_dim),
+            x0_observables_decoder=Decoder(output_dim=args.input_dim, hidden_dim=args.hidden_dim),
+            rec_loss_type=args.rec_loss_type,
+        )
+
+    elif args.dataset in [Datasets.Cifar10, Datasets.Cifar10FastOneStepLoading]:
+        return OneStepKoopmanCifar10DMDPredictMatrix(img_resolution=32,
+                                                     rec_loss_type=args.rec_loss_type,
+                                                     out_channels=args.out_channels,
+                                                     noisy_latent=args.noisy_latent,
+                                                     nonlinear_koopman=args.nonlinear_koopman,
+                                                     batch_size=args.batch_size,
+                                                     k_loss=args.k_loss,
+                                                     noisy_data=args.noisy_data,
+                                                     mixup=args.mixup,
+                                                     )
 
     else:
         raise NotImplementedError(f"Dataset {args.dataset} not implemented")

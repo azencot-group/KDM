@@ -7,6 +7,7 @@ class Datasets:
 class DistillationModels:
     OneStepKOD = "Koopman Operator Distillation"
     KoopmanDistillOneStepDMD = "Koopman Operator Distillation DMD"
+    OneStepKoopmanCifar10DMDPredictMatrix = "Koopman Operator Distillation DMD Matrix Producer"
     ConsistencyModel = "Consistency Distillation Model"
 
 
