@@ -6,7 +6,7 @@ def load_arguments(parser) -> None:
     parser.add_argument('--experiment_name', type=str, default="cifar_uncond", help='The experiment name')
     parser.add_argument('--neptune', type=bool, default=False)
     parser.add_argument('--neptune_projects', type=str, default='azencot-group/koopman-dis')
-    parser.add_argument('--tags', type=list[str], default=['koopman', '170k'])
+    parser.add_argument('--tags', type=list[str], default=['koopman'])
 
     # --- artifacts --- #
     parser.add_argument('--output_prefix_path', type=str,
@@ -17,7 +17,7 @@ def load_arguments(parser) -> None:
     # fast loading require the path to the npy file
     parser.add_argument('--datapath', type=str,
                         # default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond')
-                        default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_dataset_170k.npy')
+                        default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_dataset.npy')
     parser.add_argument('--datapath_test', type=str, default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_test_data') # work only on non normalized data
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--num_workers', type=int, default=6)
