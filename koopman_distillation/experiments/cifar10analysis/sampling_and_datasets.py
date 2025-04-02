@@ -123,8 +123,8 @@ out_dir = '/home/bermann/functional_mapping/koopman_distillation/results/cifar_u
 
 
  # ---- calculate FID for different noise levels ---- #
-spec_j = [0, 0.001, 0.01, 0.1]
-spec_i = [0, 0.4, 0.8, 1.2, 1.5]
+spec_j = [0, 0.001, 0.01]
+spec_i = [0, 0.2, 0.4, 0.6]
 for j in spec_j:
     for i in spec_i:
         fid = sample_and_calculate_fid_for_test(model=model,

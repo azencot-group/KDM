@@ -6,7 +6,7 @@ def load_arguments(parser) -> None:
     parser.add_argument('--experiment_name', type=str, default="cifar_uncond", help='The experiment name')
     parser.add_argument('--neptune', type=bool, default=False)
     parser.add_argument('--neptune_projects', type=str, default='azencot-group/koopman-dis')
-    parser.add_argument('--tags', type=list[str], default=['no adv', '3 losses', 'bs128'])
+    parser.add_argument('--tags', type=list[str], default=['adv', '3 losses', 'bs128', 'losses'])
 
     # --- artifacts --- #
     parser.add_argument('--output_prefix_path', type=str,
@@ -38,6 +38,8 @@ def load_arguments(parser) -> None:
     # losses
     parser.add_argument('--rec_loss_type', type=str, default=RecLossType.LPIPS)
     parser.add_argument('--mixup', type=float, default=0)
+    parser.add_argument('--psudo_huber_c', type=float, default=0.03)
+    parser.add_argument('--discriminator', type=bool, default=False)
 
     # --- sampling --- #
     parser.add_argument('--data_shape', type=list[int], default=(3, 32, 32))

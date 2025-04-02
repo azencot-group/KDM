@@ -18,5 +18,7 @@ class RecLossType:
     L2 = "L2"
     LPIPS = "LPIPS"
     BOTH = "BOTH"
+    Huber = "Huber"
+    Wess = "Wess"
 
 
