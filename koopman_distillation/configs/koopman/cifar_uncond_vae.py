@@ -6,7 +6,7 @@ def load_arguments(parser) -> None:
     parser.add_argument('--experiment_name', type=str, default="cifar_uncond", help='The experiment name')
     parser.add_argument('--neptune', type=bool, default=False)
     parser.add_argument('--neptune_projects', type=str, default='azencot-group/koopman-dis')
-    parser.add_argument('--tags', type=list[str], default=['1M inf batch', 'no_conv', 'x0 noise'])
+    parser.add_argument('--tags', type=list[str], default=['sampling with noise'])
 
     # --- artifacts --- #
     parser.add_argument('--output_prefix_path', type=str,
@@ -19,7 +19,7 @@ def load_arguments(parser) -> None:
                         default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_1M')
                         # default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_dataset.npy')
     parser.add_argument('--datapath_test', type=str, default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_test_data') # work only on non normalized data
-    parser.add_argument('--batch_size', type=int, default=64)
+    parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--num_workers', type=int, default=6)
 
     # --- training --- #
@@ -28,10 +28,12 @@ def load_arguments(parser) -> None:
     parser.add_argument('--print_every', type=float, default=200)
 
     # --- model --- #
-    parser.add_argument('--distillation_model', type=str, default=DistillationModels.OneStepKOD)
+    parser.add_argument('--distillation_model', type=str, default=DistillationModels.OneStepKODVAE)
     parser.add_argument('--ema_rate', type=list[float], default=[0.999, 0.9999, 0.9999432189950708])
     parser.add_argument('--out_channels', type=int, default=1)
     parser.add_argument('--nonlinear_koopman', type=bool, default=False)
+    parser.add_argument('--x0_vae', type=float, default=0.0001)
+    parser.add_argument('--xT_vae', type=float, default=0.0001)
 
     # losses
     parser.add_argument('--rec_loss_type', type=str, default=RecLossType.LPIPS)

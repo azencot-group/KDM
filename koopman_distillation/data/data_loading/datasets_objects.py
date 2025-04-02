@@ -29,10 +29,11 @@ class Cifar10Dataset(torch.utils.data.Dataset):
 
     def __getitem__(self, ix):
         dynamics = np.load(self.paths[ix])['arr_0']
-        x0: Tensor = torch.tensor(dynamics[0]).float()
-        xT: Tensor = torch.tensor(dynamics[-1]).float()
+        x0: Tensor = torch.tensor(dynamics[-1]).float()
+        xT: Tensor = torch.tensor(dynamics[0]).float()
 
         return x0, xT, ix
+
 
 
 class Cifar10DatasetFastLoading(torch.utils.data.Dataset):

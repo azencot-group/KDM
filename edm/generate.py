@@ -314,14 +314,14 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
     i = 0
     # for batch_seeds in tqdm.tqdm(rank_batches, unit='batch', disable=(dist.get_rank() != 0)):
     # todo ----- my parameters -----
-    path_to_save = '/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_400k/'
-    how_much_to_gen = 400000
-    seed = 3165
+    path_to_save = '/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_test_50k/'
+    how_much_to_gen = 50000
+    seed = 1111
     torch.manual_seed(seed)
     # change seed
     while True:
         torch.distributed.barrier()
-        batch_size = 256
+        batch_size = 512
         if batch_size == 0:
             continue
         latents = torch.randn([batch_size, net.img_channels, net.img_resolution, net.img_resolution], device=device)
@@ -342,7 +342,8 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
 
         for path in torch.stack(gen_path).permute(1, 0, 2, 3, 4):
             os.makedirs(path_to_save, exist_ok=True)
-            np.savez_compressed(f'{path_to_save}path{i}', path.detach().cpu().numpy())
+            np.savez_compressed(f'{path_to_save}path{i}', path[[0, -1]].detach().cpu().numpy())
+            # np.savez_compressed(f'{path_to_save}path{i}', path.detach().cpu().numpy())
             dist.print0(f'done saving {i}th image path')
             i += 1
             if i == how_much_to_gen:
