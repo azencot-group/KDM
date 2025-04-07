@@ -7,7 +7,7 @@ from edm.dnnlib.util import open_url
 from koopman_distillation.model.koopman_distillator import KoopmanDistillOneStep, KoopmanDistillOneStepDMD
 from koopman_distillation.model.modules.model_checkerboard import Encoder, Decoder
 from koopman_distillation.model.modules.model_cifar10 import OneStepKoopmanCifar10, SongUNet, OneStepKoopmanCifar10DMD, \
-    OneStepKoopmanCifar10DMDPredictMatrix
+    OneStepKoopmanCifar10DMDPredictMatrix, VAEOneStepKoopmanCifar10, PrecondOneStepKoopmanCifar10
 from koopman_distillation.other_methods.consistency_models.models.consistency_model import ConsistencyModel
 from koopman_distillation.other_methods.consistency_models.models.diffusion import KarrasDenoiser
 from koopman_distillation.other_methods.consistency_models.models.ema import create_ema_and_scales_fn
@@ -17,6 +17,12 @@ from koopman_distillation.utils.names import DistillationModels, Datasets
 def create_distillation_model(model_type: DistillationModels, args):
     if model_type == DistillationModels.OneStepKOD:
         return create_koopman_model(args)
+
+    elif model_type == DistillationModels.OneStepKODVAE:
+        return create_vae_koopman_model(args)
+
+    elif model_type == DistillationModels.OneStepKODPrecond:
+        return create_precond_koopman_model(args)
 
     elif model_type == DistillationModels.KoopmanDistillOneStepDMD:
         return create_dmd_koopman_model(args)
@@ -54,6 +60,42 @@ def create_koopman_model(args):
                                      mixup=args.mixup,
                                      nonlinear_koopman=args.nonlinear_koopman,
                                      )
+
+    else:
+        raise NotImplementedError(f"Dataset {args.dataset} not implemented")
+
+
+def create_vae_koopman_model(args):
+    if args.dataset in [Datasets.Cifar10, Datasets.Cifar10FastOneStepLoading]:
+        # todo - implement the VAE model
+        return VAEOneStepKoopmanCifar10(img_resolution=32, rec_loss_type=args.rec_loss_type,
+                                        out_channels=args.out_channels,
+                                        noisy_latent=args.noisy_latent,
+                                        noisy_data=args.noisy_data,
+                                        mixup=args.mixup,
+                                        nonlinear_koopman=args.nonlinear_koopman,
+                                        x0_vae=args.x0_vae,
+                                        xT_vae=args.xT_vae,
+                                        )
+
+    else:
+        raise NotImplementedError(f"Dataset {args.dataset} not implemented")
+
+
+def create_precond_koopman_model(args):
+    if args.dataset in [Datasets.Cifar10, Datasets.Cifar10FastOneStepLoading]:
+        # todo - implement the VAE model
+        return PrecondOneStepKoopmanCifar10(img_resolution=32, rec_loss_type=args.rec_loss_type,
+                                            out_channels=args.out_channels,
+                                            noisy_latent=args.noisy_latent,
+                                            noisy_data=args.noisy_data,
+                                            mixup=args.mixup,
+                                            nonlinear_koopman=args.nonlinear_koopman,
+                                            add_sampling_noise=args.add_sampling_noise,
+                                            model_channels=args.model_channels,
+                                            channel_mult=args.channel_mult,
+                                            psudo_huber_c=args.psudo_huber_c,
+                                            )
 
     else:
         raise NotImplementedError(f"Dataset {args.dataset} not implemented")

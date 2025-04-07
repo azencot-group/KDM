@@ -21,5 +21,9 @@ echo -e "SLURM_JOB_NODELIST:\t" $SLURM_JOB_NODELIST "\n\n"
 module load anaconda				### load anaconda module (must be present when working with conda environments)
 source activate edm				### activate a conda environment, replace my_env with your conda environment
 
-python main.py --config_name koopman/cifar_uncond_dmdkoopman_batch --neptune True --out_channels 1 --batch_size 32 --mixup 0 --noisy_data 0
-#python main.py --config_name koopman/cifar_uncond --neptune True --out_channels 1 --batch_size 32 --mixup 0 --noisy_data 0
+
+
+#python main.py --config_name koopman/cifar_uncond_precond_2_4 --neptune True --noisy_latent 0.0 --add_sampling_noise 0.0 --rec_loss_type Huber
+#python main.py --config_name koopman/cifar_uncond_precond_2_4 --neptune True --noisy_latent 0.4 --add_sampling_noise 0.4 --rec_loss_type Huber
+#python main.py --config_name koopman/cifar_uncond_adverserial_2_4 --neptune True --noisy_latent 0.0 --add_sampling_noise 0.0 --rec_loss_type Huber
+python main.py --config_name koopman/cifar_uncond_adverserial_2_4 --neptune True --noisy_latent 0.4 --add_sampling_noise 0.4 --rec_loss_type LPIPS

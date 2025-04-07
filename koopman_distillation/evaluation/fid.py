@@ -75,14 +75,20 @@ def sample_and_calculate_fid(model, data_shape, num_samples, device, batch_size,
     i = 0
     output_dir = image_dir + '/samples'
     os.makedirs(output_dir, exist_ok=True)
-    data_iter = iter(data_loader)
+    if data_loader is not None:
+        data_iter = iter(data_loader)
+    else:
+        data_iter = None
     while True:
-        try:
-            batch = next(data_iter)
-        except StopIteration:
-            # If data_iter is exhausted, reinitialize it
-            data_iter = iter(data_loader)
-            batch = next(data_iter)  # Try again after reinitialization
+        if data_iter is not None:
+            try:
+                batch = next(data_iter)
+            except StopIteration:
+                # If data_iter is exhausted, reinitialize it
+                data_iter = iter(data_loader)
+                batch = next(data_iter)  # Try again after reinitialization
+        else:
+            batch = None
         x0_sample = model.sample(batch_size, device, data_shape, data_batch=batch)
         images = x0_sample[0].detach().cpu().numpy()
         for img in images:
@@ -95,4 +101,40 @@ def sample_and_calculate_fid(model, data_shape, num_samples, device, batch_size,
 
     return calculate_fid(
         ref_path='https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz',
-        image_path=output_dir)
+        image_path=output_dir,
+        batch_size=batch_size)
+
+
+def sample_and_calculate_fid_for_test(model, data_shape, num_samples, device, batch_size, epoch, image_dir,
+                                      data_loader, sample_noise_z_T, sample_noise_z0_push):
+    i = 0
+    output_dir = image_dir + '/samples'
+    os.makedirs(output_dir, exist_ok=True)
+    if data_loader is not None:
+        data_iter = iter(data_loader)
+    else:
+        data_iter = None
+    while True:
+        if data_iter is not None:
+            try:
+                batch = next(data_iter)
+            except StopIteration:
+                # If data_iter is exhausted, reinitialize it
+                data_iter = iter(data_loader)
+                batch = next(data_iter)  # Try again after reinitialization
+        else:
+            batch = None
+        x0_sample = model.sample(batch_size, device, data_shape, data_batch=batch, sample_noise_z_T=sample_noise_z_T, sample_noise_z0_push=sample_noise_z0_push)
+        images = x0_sample[0].detach().cpu().numpy()
+        for img in images:
+            np.savez_compressed(f'{output_dir}/img{i}', img)
+            i += 1
+            if i >= num_samples:
+                break
+        if i >= num_samples:
+            break
+
+    return calculate_fid(
+        ref_path='https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz',
+        image_path=output_dir,
+        batch_size=batch_size)
