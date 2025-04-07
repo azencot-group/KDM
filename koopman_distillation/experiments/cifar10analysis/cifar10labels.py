@@ -9,7 +9,7 @@ cifar10_cls = torch.hub.load("chenyaofo/pytorch-cifar-models", "cifar10_resnet20
 bs = 1028
 
 train_data = load_data(
-    dataset=Datasets.Cifar10,
+    dataset=Datasets.Cifar10_1M_Uncond,
     dataset_path='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond',
     batch_size=bs,
     num_workers=4,

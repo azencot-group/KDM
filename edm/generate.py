@@ -313,9 +313,8 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
     # dist.print0(f'Generating {len(seeds)} images to "{outdir}"...')
     i = 0
     # for batch_seeds in tqdm.tqdm(rank_batches, unit='batch', disable=(dist.get_rank() != 0)):
-    # todo ----- my parameters -----
-    path_to_save = '/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_test_50k/'
-    how_much_to_gen = 50000
+    path_to_save = '/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32cond_test_1M/'
+    how_much_to_gen = 1_000_000
     seed = 1111
     torch.manual_seed(seed)
     # change seed

@@ -14,7 +14,7 @@ sys.path.append('../../../')
 from edm.dnnlib.util import open_url
 from koopman_distillation.data.data_loading.datasets_objects import Cifar10Dataset
 from koopman_distillation.evaluation.fid import translate_to_image_format, calculate_fid_from_inception_stats, \
-    sample_and_calculate_fid, sample_and_calculate_fid_for_test
+    sample_and_calculate_fid_for_test
 
 class Cifar10DatasetTmp(torch.utils.data.Dataset):
     def __init__(self, path):

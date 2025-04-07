@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 from koopman_distillation.data.data_loading.data_loaders import load_data
-from koopman_distillation.evaluation.fid import translate_to_image_format, sample_and_calculate_fid
+from koopman_distillation.evaluation.fid import translate_to_image_format
 from koopman_distillation.utils.names import Datasets
 
 

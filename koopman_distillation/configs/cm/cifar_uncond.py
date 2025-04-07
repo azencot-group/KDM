@@ -13,7 +13,7 @@ def load_arguments(parser) -> None:
                         default="/home/bermann/functional_mapping/koopman_distillation/results")
 
     # --- data --- #
-    parser.add_argument('--dataset', type=str, default=Datasets.Cifar10)
+    parser.add_argument('--dataset', type=str, default=Datasets.Cifar10_1M_Uncond)
     parser.add_argument('--datapath', type=str,
                         default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond')
     parser.add_argument('--batch_size', type=int, default=32)

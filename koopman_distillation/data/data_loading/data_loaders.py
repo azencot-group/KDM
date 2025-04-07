@@ -62,18 +62,13 @@ def load_data(dataset: Datasets, dataset_path: str, dataset_path_test: str, batc
                                            drop_last=True), None
 
 
-    elif dataset == Datasets.Cifar10:
+    elif dataset == Datasets.Cifar10_1M_Uncond:
         train_set = Cifar10Dataset(dataset_path)
         train_data = torch.utils.data.DataLoader(dataset=train_set,
                                                  pin_memory=True,
                                                  batch_sampler=InfiniteBatchSampler(dataset_len=len(train_set),
                                                                                     batch_size=batch_size),
                                                  num_workers=num_workers)
-        # train_data = torch.utils.data.DataLoader(Cifar10Dataset(dataset_path),
-        #                                          num_workers=num_workers,
-        #                                          batch_size=batch_size,
-        #                                          shuffle=True,
-        #                                          drop_last=True)
         test_data = torch.utils.data.DataLoader(Cifar10Dataset(dataset_path_test),
                                                 num_workers=num_workers,
                                                 batch_size=batch_size,
