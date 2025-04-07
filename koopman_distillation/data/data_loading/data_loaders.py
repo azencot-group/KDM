@@ -2,7 +2,7 @@ import numpy as np
 from torch.utils.data import Sampler
 
 from koopman_distillation.data.data_loading.datasets_objects import CheckerboardDataset, Cifar10Dataset, \
-    FIDCifar10Dataset, Cifar10DatasetFastLoading
+    FIDCifar10Dataset, Cifar10DatasetCond
 from koopman_distillation.utils.names import Datasets
 import torch
 
@@ -76,17 +76,17 @@ def load_data(dataset: Datasets, dataset_path: str, dataset_path_test: str, batc
                                                 drop_last=True)
         return train_data, test_data
 
-    elif dataset == Datasets.Cifar10FastOneStepLoading:
-
-        train_data = torch.utils.data.DataLoader(Cifar10DatasetFastLoading(dataset_path),
-                                                 num_workers=num_workers,
-                                                 batch_size=batch_size,
-                                                 shuffle=True,
-                                                 drop_last=True)
+    elif dataset == Datasets.Cifar10_1M_Cond:
+        train_set = Cifar10DatasetCond(dataset_path)
+        train_data = torch.utils.data.DataLoader(dataset=train_set,
+                                                 pin_memory=True,
+                                                 batch_sampler=InfiniteBatchSampler(dataset_len=len(train_set),
+                                                                                    batch_size=batch_size),
+                                                 num_workers=num_workers)
         test_data = torch.utils.data.DataLoader(Cifar10Dataset(dataset_path_test),
                                                 num_workers=num_workers,
                                                 batch_size=batch_size,
-                                                shuffle=True,
+                                                shuffle=False,
                                                 drop_last=True)
         return train_data, test_data
 

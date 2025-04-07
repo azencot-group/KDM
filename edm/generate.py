@@ -23,11 +23,8 @@ sys.path.append('../')
 sys.path.append('../../')
 sys.path.append('../../../')
 
-
 import edm
 from torch_utils import distributed as dist
-
-
 
 
 # ----------------------------------------------------------------------------
@@ -290,7 +287,6 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
         --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-cond-vp.pkl
     """
 
-
     dist.init()
     num_batches = ((len(seeds) - 1) // (max_batch_size * dist.get_world_size()) + 1) * dist.get_world_size()
     all_batches = torch.as_tensor(seeds).tensor_split(num_batches)
@@ -339,9 +335,13 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
         images, gen_path = sampler_fn(net, latents, class_labels, randn_like=torch.randn_like, **sampler_kwargs)
         # plot_image_sequence(torch.stack(gen_path)[:, 0])
 
-        for path in torch.stack(gen_path).permute(1, 0, 2, 3, 4):
+        for path, lbl in zip(torch.stack(gen_path).permute(1, 0, 2, 3, 4), class_labels):
             os.makedirs(path_to_save, exist_ok=True)
-            np.savez_compressed(f'{path_to_save}path{i}', path[[0, -1]].detach().cpu().numpy())
+            data = {
+                'endpoints': path[[0, -1]].detach().cpu().numpy(),
+                'label': lbl.detach().cpu().numpy()
+            }
+            np.savez_compressed(f'{path_to_save}path{i}',**data)
             # np.savez_compressed(f'{path_to_save}path{i}', path.detach().cpu().numpy())
             dist.print0(f'done saving {i}th image path')
             i += 1

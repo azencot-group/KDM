@@ -14,7 +14,8 @@ from old.distillation.utils.display import plot_spectrum
 
 class TrainLoop:
     def __init__(self, model, train_data, test_data, batch_size, device, output_dir, logger, ema_rate,
-                 iterations=400001, lr=0.0003, print_every=50, data_shape=(2), teach_model=False, advers=False):
+                 iterations=400001, lr=0.0003, print_every=50, data_shape=(2), teach_model=False, advers=False,
+                 cond=False):
         self.model = model
         self.ema = copy.deepcopy(model).eval().requires_grad_(False)
         self.train_data = iter(train_data)
@@ -37,6 +38,7 @@ class TrainLoop:
 
         self.discriminator = None
         self.advers = advers
+        self.cond = cond
         if advers:
             self.discriminator = Discriminator(in_channels=3).cuda()
             self.optimizer_adv = torch.optim.Adam(params=self.discriminator.parameters(), lr=lr, betas=(0.9, 0.999),
@@ -47,14 +49,18 @@ class TrainLoop:
         i = 0
         while i < self.iterations:
             batch = next(self.train_data)
-            xt, xT, _ = batch
+            xt, xT, labels = batch
+            if torch.isnan(labels).any():
+                labels = None
+            else:
+                labels = labels.to(self.device)
             xt = xt.to(self.device)
             xT = xT.to(self.device)
 
             self.optimizer.zero_grad()
 
             # return all components relevant for loss calculation
-            fw_comp = self.model(x_0=xt, x_T=xT)
+            fw_comp = self.model(x_0=xt, x_T=xT, labels=labels)
 
             # --- disc losses --- #
             if self.advers:
@@ -91,7 +97,7 @@ class TrainLoop:
             self.logger.log(k, v.item(), iteration)
 
         # plot qualitative results
-        plot_samples(self.logger, self.ema, self.batch_size, self.device, self.data_shape, self.output_dir)
+        plot_samples(self.logger, self.ema, self.batch_size, self.device, self.data_shape, self.output_dir, self.cond)
 
         # evaluate fid for cifar10
         if iteration % (self.print_every * 100) == 0 and self.data_shape[0] == 3:
@@ -101,7 +107,9 @@ class TrainLoop:
                                                device=self.device,
                                                batch_size=self.batch_size,
                                                epoch=iteration,
-                                               image_dir=self.output_dir)
+                                               image_dir=self.output_dir,
+                                               cond=self.cond,
+                                               )
             self.logger.log('ema_fid', fid_ema, iteration)
             fid_model = sample_and_calculate_fid(model=self.model,
                                                  data_shape=self.data_shape,
@@ -109,7 +117,9 @@ class TrainLoop:
                                                  device=self.device,
                                                  batch_size=self.batch_size,
                                                  epoch=iteration,
-                                                 image_dir=self.output_dir)
+                                                 image_dir=self.output_dir,
+                                                 cond=self.cond,
+                                                 )
             self.logger.log('model_fid', fid_model, iteration)
             plot_spectrum(self.model.koopman_operator.weight.data.cpu().detach().numpy(), self.output_dir, self.logger)
 
@@ -130,18 +140,22 @@ class TrainLoop:
             # save the model
 
     def evaluation_of_test_data(self, iteration):
-        if self.test_data is None:
+        if self.test_data is None or self.cond:
             return
 
         loss_sums = {}
         num_batches = 0
 
         for test_batch in self.test_data:
-            xT, xt, _ = test_batch
+            xT, xt, labels = test_batch
+            if torch.isnan(labels).any():
+                labels = None
+            else:
+                labels = labels.to(self.device)
             xt = xt.to(self.device)
             xT = xT.to(self.device)
             # return all components relevant for loss calculation
-            fw_comp = self.model(x_0=xt, x_T=xT)
+            fw_comp = self.model(x_0=xt, x_T=xT, labels=labels)
             # calculate loss
             test_losses = self.model.loss(fw_comp, self.discriminator)
 

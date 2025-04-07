@@ -22,3 +22,5 @@ module load anaconda				### load anaconda module (must be present when working w
 source activate edm				### activate a conda environment, replace my_env with your conda environment
 
 python main.py --config_name koopman/cifar_uncond --neptune True
+#python main.py --config_name koopman/cifar_cond --neptune True --cond_type KoopmanMatrixAddition
+#python main.py --config_name koopman/cifar_cond --neptune True --cond_type OnlyEncDec

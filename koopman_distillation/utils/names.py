@@ -1,6 +1,6 @@
 class Datasets:
     Cifar10_1M_Uncond = "Cifar10 1 million unconditional"
-    Cifar10FastOneStepLoading = "Cifar10FastOneStepLoading"
+    Cifar10_1M_Cond = "Cifar10 1 million conditional"
     Checkerboard = "Checkerboard"
 
 
@@ -15,3 +15,8 @@ class RecLossType:
     BOTH = "BOTH"
     Huber = "Huber"
     Wess = "Wess"
+
+class CondType:
+    Uncond = "Uncond"
+    OnlyEncDec = "OnlyEncDec"
+    KoopmanMatrixAddition = "KoopmanMatrixAddition"

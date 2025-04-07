@@ -71,12 +71,17 @@ def calculate_fid(ref_path, image_path, batch_size=32):
     return fid
 
 
-def sample_and_calculate_fid(model, data_shape, num_samples, device, batch_size, epoch, image_dir):
+def sample_and_calculate_fid(model, data_shape, num_samples, device, batch_size, epoch, image_dir, cond=False):
     i = 0
     output_dir = image_dir + '/samples'
     os.makedirs(output_dir, exist_ok=True)
     while True:
-        x0_sample = model.sample(batch_size, device, data_shape)
+        if cond:
+            labels = torch.eye(model.label_dim, device=device)[
+                torch.randint(model.label_dim, size=[batch_size], device=device)]
+        else:
+            labels = None
+        x0_sample = model.sample(batch_size, device, data_shape, labels=labels)
         images = x0_sample[0].detach().cpu().numpy()
         for img in images:
             np.savez_compressed(f'{output_dir}/img{i}', img)
@@ -93,26 +98,18 @@ def sample_and_calculate_fid(model, data_shape, num_samples, device, batch_size,
 
 
 def sample_and_calculate_fid_for_test(model, data_shape, num_samples, device, batch_size, epoch, image_dir,
-                                      data_loader, sample_noise_z_T, sample_noise_z0_push):
+                                      data_loader, sample_noise_z_T, sample_noise_z0_push, cond):
     i = 0
     output_dir = image_dir + '/samples'
     os.makedirs(output_dir, exist_ok=True)
-    if data_loader is not None:
-        data_iter = iter(data_loader)
-    else:
-        data_iter = None
     while True:
-        if data_iter is not None:
-            try:
-                batch = next(data_iter)
-            except StopIteration:
-                # If data_iter is exhausted, reinitialize it
-                data_iter = iter(data_loader)
-                batch = next(data_iter)  # Try again after reinitialization
+        if cond:
+            labels = torch.eye(model.label_dim, device=device)[
+                torch.randint(model.label_dim, size=[batch_size], device=device)]
         else:
-            batch = None
-        x0_sample = model.sample(batch_size, device, data_shape, data_batch=batch, sample_noise_z_T=sample_noise_z_T,
-                                 sample_noise_z0_push=sample_noise_z0_push)
+            labels = None
+        x0_sample = model.sample(batch_size, device, data_shape, sample_noise_z_T=sample_noise_z_T,
+                                 sample_noise_z0_push=sample_noise_z0_push, labels=labels)
         images = x0_sample[0].detach().cpu().numpy()
         for img in images:
             np.savez_compressed(f'{output_dir}/img{i}', img)

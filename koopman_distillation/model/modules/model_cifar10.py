@@ -17,7 +17,7 @@ from torch.nn.functional import silu
 from piq import LPIPS
 
 from koopman_distillation.utils.math import psudo_hober_loss
-from koopman_distillation.utils.names import RecLossType
+from koopman_distillation.utils.names import RecLossType, CondType
 
 
 # ----------------------------------------------------------------------------
@@ -933,6 +933,7 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
                  add_sampling_noise=1,
                  psudo_huber_c=0.03,
                  initial_noise_factor=80,
+                 cond_type=CondType.OnlyEncDec,
                  ):
         super().__init__()
 
@@ -1004,20 +1005,26 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
         self.koopman_operator = torch.nn.Linear(32 * 32 * out_channels, 32 * 32 * out_channels)
         self.psudo_huber_c = psudo_huber_c
 
-    def forward(self, x_0, x_T, cond=None):
+        self.cond_type = cond_type
+        if cond_type == CondType.KoopmanMatrixAddition:
+            self.koopman_control = torch.nn.Linear(label_dim, 32 * 32 * out_channels)
+
+    def forward(self, x_0, x_T, labels=None):
         T = torch.ones((x_0.shape[0],)).to(x_0.device)  # no use in one step, just a placeholder
         t = torch.zeros((x_0.shape[0],)).to(x_0.device)  # no use in one step, just a placeholder
 
-        z_0 = self.x_0_observables_encoder(x_0, t, t)
-        z_T = self.x_T_observables_encoder(x_T, T, T)
+        z_0 = self.x_0_observables_encoder(x_0, t, labels)
+        z_T = self.x_T_observables_encoder(x_T, T, labels)
 
         z_0_noisy = z_0 + torch.randn_like(z_0) * self.noisy_latent
         z_T_noisy = z_T + torch.randn_like(z_T) * self.noisy_latent
 
         z_0_pushed = self.koopman_operator(z_T_noisy.reshape(x_0.shape[0], -1)).reshape(z_0.shape)
+        if self.cond_type == CondType.KoopmanMatrixAddition:
+            z_0_pushed += self.koopman_control(labels).reshape(z_0.shape)
 
-        x_0_pushed_hat = self.x0_observables_decoder(z_0_pushed, t, t)
-        x_0_hat = self.x0_observables_decoder(z_0_noisy, t, t)
+        x_0_pushed_hat = self.x0_observables_decoder(z_0_pushed, t, labels)
+        x_0_hat = self.x0_observables_decoder(z_0_noisy, t, labels)
 
         return {'x_0': x_0, 'x_T': x_T, 'z_0': z_0, 'z_T': z_T, 'z_0_pushed': z_0_pushed, 'x_0_hat': x_0_hat,
                 'x_0_pushed_hat': x_0_pushed_hat, 'koopman_op': self.koopman_operator}
@@ -1078,18 +1085,22 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
 
         return losses
 
-    def sample(self, batch_size, device, data_shape, sample_noise_z_T=0, sample_noise_z0_push=0):
+    def sample(self, batch_size, device, data_shape, sample_noise_z_T=0, sample_noise_z0_push=0, labels=None):
+
         x_T = torch.randn((batch_size, *data_shape)).to(device) * self.initial_noise_factor
 
         T = torch.ones((x_T.shape[0],)).to(x_T.device)
         t = torch.zeros((x_T.shape[0],)).to(x_T.device)
 
-        z_T = self.x_T_observables_encoder(x_T, T, T)
+        z_T = self.x_T_observables_encoder(x_T, T, labels)
 
         if self.add_sampling_noise > 0:
             z_T = z_T + torch.randn_like(z_T) * sample_noise_z_T
 
         zt0_push = self.koopman_operator(z_T.reshape(x_T.shape[0], -1)).reshape(z_T.shape)
-        xt0_push_hat = self.x0_observables_decoder(zt0_push + torch.randn_like(z_T) * sample_noise_z0_push, t, t)
+        if self.cond_type == CondType.KoopmanMatrixAddition:
+            zt0_push += self.koopman_control(labels).reshape(zt0_push.shape)
+
+        xt0_push_hat = self.x0_observables_decoder(zt0_push + torch.randn_like(z_T) * sample_noise_z0_push, t, labels)
 
         return xt0_push_hat, x_T

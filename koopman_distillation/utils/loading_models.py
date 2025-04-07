@@ -28,7 +28,7 @@ def create_koopman_model(args):
             rec_loss_type=args.rec_loss_type,
         )
 
-    elif args.dataset in [Datasets.Cifar10_1M_Uncond, Datasets.Cifar10FastOneStepLoading]:
+    elif args.dataset in [Datasets.Cifar10_1M_Uncond, Datasets.Cifar10_1M_Cond]:
         return AdversarialOneStepKoopmanCifar10(img_resolution=32,
                                                 rec_loss_type=args.rec_loss_type,
                                                 out_channels=args.out_channels,
@@ -38,6 +38,8 @@ def create_koopman_model(args):
                                                 channel_mult=args.channel_mult,
                                                 psudo_huber_c=args.psudo_huber_c,
                                                 initial_noise_factor=args.initial_noise_factor,
+                                                cond_type=args.cond_type,
+                                                label_dim=args.label_dim,
                                                 )
 
     else:
