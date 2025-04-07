@@ -56,6 +56,7 @@ def main(args):
             device=torch.device('cuda'),
             logger=logger,
             ema_rate=args.ema_rate,
+            advers=args.advers,
         ).train()
 
 

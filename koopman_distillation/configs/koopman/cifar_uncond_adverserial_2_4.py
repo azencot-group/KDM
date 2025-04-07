@@ -6,7 +6,7 @@ def load_arguments(parser) -> None:
     parser.add_argument('--experiment_name', type=str, default="cifar_uncond", help='The experiment name')
     parser.add_argument('--neptune', type=bool, default=False)
     parser.add_argument('--neptune_projects', type=str, default='azencot-group/koopman-dis')
-    parser.add_argument('--tags', type=list[str], default=['adv', '3 losses', 'bs128', 'losses'])
+    parser.add_argument('--tags', type=list[str], default=['Adversarial', 'fix our_adv_loss'])
 
     # --- artifacts --- #
     parser.add_argument('--output_prefix_path', type=str,
@@ -17,8 +17,9 @@ def load_arguments(parser) -> None:
     # fast loading require the path to the npy file
     parser.add_argument('--datapath', type=str,
                         default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_1M')
-                        # default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_dataset.npy')
-    parser.add_argument('--datapath_test', type=str, default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_test_data') # work only on non normalized data
+    # default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_dataset.npy')
+    parser.add_argument('--datapath_test', type=str,
+                        default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_test_data')  # work only on non normalized data
     parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--num_workers', type=int, default=6)
 
@@ -39,7 +40,6 @@ def load_arguments(parser) -> None:
     parser.add_argument('--rec_loss_type', type=str, default=RecLossType.LPIPS)
     parser.add_argument('--mixup', type=float, default=0)
     parser.add_argument('--psudo_huber_c', type=float, default=0.03)
-    parser.add_argument('--discriminator', type=bool, default=False)
 
     # --- sampling --- #
     parser.add_argument('--data_shape', type=list[int], default=(3, 32, 32))
@@ -49,3 +49,5 @@ def load_arguments(parser) -> None:
     parser.add_argument('--noisy_data', type=float, default=0)
     parser.add_argument('--add_sampling_noise', type=float, default=0.4)
 
+    # --- adversarial --- #
+    parser.add_argument('--advers', type=bool, default=True)

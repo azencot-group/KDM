@@ -3,7 +3,7 @@ import torch
 from matplotlib import pyplot as plt
 
 
-def plot_spectrum(C):
+def plot_spectrum(C, output_dir, logger):
     if C.dtype in [torch.float32, torch.float64]:
         C = C.detach().cpu().numpy()
 
@@ -25,6 +25,4 @@ def plot_spectrum(C):
     plt.xlabel('Real component')
     plt.ylabel('Imaginary component')
 
-    plt.show()
-    plt.clf()
-    plt.close(fig)
+    logger.log(f'{output_dir}/spec', fig)

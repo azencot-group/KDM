@@ -94,7 +94,6 @@ def create_precond_koopman_model(args):
                                             add_sampling_noise=args.add_sampling_noise,
                                             model_channels=args.model_channels,
                                             channel_mult=args.channel_mult,
-                                            discriminator=args.discriminator,
                                             psudo_huber_c=args.psudo_huber_c,
                                             )
 

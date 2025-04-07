@@ -7,14 +7,14 @@ import torch
 
 from koopman_distillation.evaluation.fid import sample_and_calculate_fid
 from koopman_distillation.evaluation.wassertien_distance import measure_wess_distance
-from koopman_distillation.other_methods.consistency_models.models.nn import update_ema
+from koopman_distillation.model.modules.model_cifar10 import Discriminator
 from koopman_distillation.utils.loggers.logging import plot_samples
+from old.distillation.utils.display import plot_spectrum
 
 
 class TrainLoop:
     def __init__(self, model, train_data, test_data, batch_size, device, output_dir, logger, ema_rate,
-                 iterations=400001,
-                 lr=0.0003, print_every=50, data_shape=(2), teach_model=False):
+                 iterations=400001, lr=0.0003, print_every=50, data_shape=(2), teach_model=False, advers=False):
         self.model = model
         self.ema = copy.deepcopy(model).eval().requires_grad_(False)
         self.train_data = iter(train_data)
@@ -28,11 +28,20 @@ class TrainLoop:
         self.logger = logger
         self.TModel_exists = teach_model
         self.optimizer = torch.optim.Adam(params=model.parameters(), lr=lr, betas=(0.9, 0.999), eps=1e-8)
+        self.best_fid_ema = float('inf')
+        self.best_fid_model = float('inf')
 
         seed = 42
         np.random.seed(seed)
         torch.manual_seed(seed)
         # torch.backends.cudnn.benchmark = True
+
+        self.discriminator = None
+        self.advers = advers
+        if advers:
+            self.discriminator = Discriminator(in_channels=3).cuda()
+            self.optimizer_adv = torch.optim.Adam(params=self.discriminator.parameters(), lr=lr, betas=(0.9, 0.999),
+                                                  eps=1e-8)
 
     def train(self):
         global_step = 0
@@ -48,15 +57,24 @@ class TrainLoop:
 
             # return all components relevant for loss calculation
             fw_comp = self.model(x_0=xt, x_T=xT, global_step=global_step)
+            # --- disc losses --- #
+            if self.advers:
+                self.optimizer_adv.zero_grad()
+                advers_loss = self.discriminator.loss(fw_comp)
+                advers_loss['adv_loss'].backward()
+                self.optimizer_adv.step()
 
             # calculate loss
-            losses = self.model.loss(fw_comp)
+            losses = self.model.loss(fw_comp, discriminator=self.discriminator)
 
             losses['loss'].backward()  # backward
             self._nan_to_num(self.model)
             self.optimizer.step()  # update
             global_step += 1
             self._update_ema(self.model, self.ema)
+
+            if self.advers:
+                losses.update(advers_loss)
 
             if (i + 1) % self.print_every == 0:
                 self.model.eval()
@@ -80,26 +98,33 @@ class TrainLoop:
 
         # evaluate fid for cifar10
         if iteration % (self.print_every * 100) == 0 and self.data_shape[0] == 3:
-            torch.save(self.model, f'{self.output_dir}/model.pt')
-            torch.save(self.ema, f'{self.output_dir}/ema_model.pt')
-            fid = sample_and_calculate_fid(model=self.ema,
-                                           data_shape=self.data_shape,
-                                           num_samples=50000,
-                                           device=self.device,
-                                           batch_size=self.batch_size,
-                                           epoch=iteration,
-                                           image_dir=self.output_dir,
-                                           data_loader=None)
-            self.logger.log('ema_fid', fid, iteration)
-            fid = sample_and_calculate_fid(model=self.model,
-                                           data_shape=self.data_shape,
-                                           num_samples=50000,
-                                           device=self.device,
-                                           batch_size=self.batch_size,
-                                           epoch=iteration,
-                                           image_dir=self.output_dir,
-                                           data_loader=None)
-            self.logger.log('model_fid', fid, iteration)
+            fid_ema = sample_and_calculate_fid(model=self.ema,
+                                               data_shape=self.data_shape,
+                                               num_samples=50000,
+                                               device=self.device,
+                                               batch_size=self.batch_size,
+                                               epoch=iteration,
+                                               image_dir=self.output_dir,
+                                               data_loader=None)
+            self.logger.log('ema_fid', fid_ema, iteration)
+            fid_model = sample_and_calculate_fid(model=self.model,
+                                                 data_shape=self.data_shape,
+                                                 num_samples=50000,
+                                                 device=self.device,
+                                                 batch_size=self.batch_size,
+                                                 epoch=iteration,
+                                                 image_dir=self.output_dir,
+                                                 data_loader=None)
+            self.logger.log('model_fid', fid_model, iteration)
+            plot_spectrum(self.model.koopman_operator.weight.data.cpu().detach().numpy(), self.output_dir, self.logger)
+
+            if fid_ema < self.best_fid_ema:
+                torch.save(self.model, f'{self.output_dir}/ema_model.pt')
+                self.best_fid_ema = fid_ema
+
+            if fid_model < self.best_fid_model:
+                torch.save(self.model, f'{self.output_dir}/model.pt')
+                self.best_fid_model = fid_model
             # save the model
 
         # checkerboard evaluation
@@ -123,7 +148,7 @@ class TrainLoop:
             # return all components relevant for loss calculation
             fw_comp = self.model(x_0=xt, x_T=xT, global_step=global_step)
             # calculate loss
-            test_losses = self.model.loss(fw_comp)
+            test_losses = self.model.loss(fw_comp, self.discriminator)
 
             for k, v in test_losses.items():
                 if k not in loss_sums:

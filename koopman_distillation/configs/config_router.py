@@ -13,8 +13,12 @@ def get_configs():
         from koopman_distillation.configs.koopman.cifar_uncond import load_arguments
         load_arguments(parser)
 
-    elif 'koopman/cifar_uncond_precond' == parser.parse_known_args()[0].config_name:
-        from koopman_distillation.configs.koopman.cifar_uncond_precond import load_arguments
+    elif 'koopman/cifar_uncond_precond_2_4' == parser.parse_known_args()[0].config_name:
+        from koopman_distillation.configs.koopman.cifar_uncond_precond_2_4 import load_arguments
+        load_arguments(parser)
+
+    elif 'koopman/cifar_uncond_adverserial_2_4' == parser.parse_known_args()[0].config_name:
+        from koopman_distillation.configs.koopman.cifar_uncond_adverserial_2_4 import load_arguments
         load_arguments(parser)
 
     elif 'koopman/cifar_uncond_dmdkoopman' == parser.parse_known_args()[0].config_name:

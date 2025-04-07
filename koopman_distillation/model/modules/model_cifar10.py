@@ -18,7 +18,6 @@ from piq import LPIPS
 
 from koopman_distillation.utils.math import psudo_hober_loss
 from koopman_distillation.utils.names import RecLossType
-from koopman_distillation.utils.sinkhorn import sinkhorn
 
 
 # ----------------------------------------------------------------------------
@@ -1934,6 +1933,15 @@ class Discriminator(nn.Module):
     def forward(self, x):
         return self.model(x)
 
+    def loss(self, loss_comps):
+        d_real = self.model(loss_comps['x_0'].detach())
+        d_fake = self.model(loss_comps['x_0_pushed_hat'].detach())
+
+        real_loss = F.binary_cross_entropy_with_logits(d_real, torch.ones_like(d_real))
+        fake_loss = F.binary_cross_entropy_with_logits(d_fake, torch.zeros_like(d_fake))
+        adv_loss = real_loss + fake_loss
+        return {'adv_loss': adv_loss, 'real_loss': real_loss, 'fake_loss': fake_loss}
+
 
 class PrecondOneStepKoopmanCifar10(torch.nn.Module):
     def __init__(self,
@@ -1968,7 +1976,6 @@ class PrecondOneStepKoopmanCifar10(torch.nn.Module):
                  mixup=0,
                  add_sampling_noise=1,
                  psudo_huber_c=0.03,
-                 discriminator=False,
                  ):
         super().__init__()
 
@@ -1982,10 +1989,6 @@ class PrecondOneStepKoopmanCifar10(torch.nn.Module):
 
         self.noisy_latent = noisy_latent
         self.rec_loss_type = rec_loss_type
-
-        self.discriminator = None
-        if discriminator:
-            self.discriminator = Discriminator(in_channels=img_channels)
 
         self.lpips = LPIPS(replace_pooling=True, reduction="none")
 
@@ -2085,7 +2088,7 @@ class PrecondOneStepKoopmanCifar10(torch.nn.Module):
     def generator_loss(self, fake_logits):
         return F.binary_cross_entropy_with_logits(fake_logits, torch.ones_like(fake_logits))
 
-    def loss(self, loss_comps):
+    def loss(self, loss_comps, discriminator=None):
 
         losses = {}
         latent_loss = ((loss_comps['z_0'] - loss_comps['z_0_pushed']) ** 2).mean()
@@ -2109,7 +2112,7 @@ class PrecondOneStepKoopmanCifar10(torch.nn.Module):
                                        (loss_comps['x_0_pushed_hat'] + 1) / 2).mean()
             rec_loss = self.lpips((loss_comps['x_0'] + 1) / 2,
                                   (loss_comps['x_0_hat'] + 1) / 2).mean()
-            losses.update({'push_rec_loss': push_rec_loss, 'rec_loss': rec_loss, })
+            losses.update({'push_rec_loss': push_rec_loss, 'rec_loss': rec_loss})
 
             loss = latent_loss + rec_loss + push_rec_loss
 
@@ -2127,33 +2130,15 @@ class PrecondOneStepKoopmanCifar10(torch.nn.Module):
 
             loss = latent_loss + rec_loss + push_rec_loss
 
-        elif self.rec_loss_type == RecLossType.Wess:
-            s = loss_comps['x_0'].shape
-            rec_loss = sinkhorn(loss_comps['x_0'].reshape(s[0], -1), loss_comps['x_0_hat'].reshape(s[0], -1), p=1)[
-                           0] * 0.001
-            push_rec_loss = sinkhorn(loss_comps['x_0'].reshape(s[0], -1),
-                                     loss_comps['x_0_pushed_hat'].reshape(s[0], -1), p=1)[0] * 0.001
-            losses.update({'push_rec_loss': push_rec_loss, 'rec_loss': rec_loss})
-            loss = latent_loss + rec_loss + push_rec_loss
         else:
             loss = None
             raise ValueError(f"Invalid rec loss type: {self.rec_loss_type}")
 
-        if self.discriminator:
-            # === Discriminator update ===
-            real_logits = self.discriminator(loss_comps['x_0'].detach())
-            fake_logits = self.discriminator(loss_comps['x_0_pushed_hat'].detach())
-            disc_loss_real = F.binary_cross_entropy_with_logits(real_logits, torch.ones_like(real_logits))
-            disc_loss_fake = F.binary_cross_entropy_with_logits(fake_logits, torch.zeros_like(fake_logits))
-            disc_loss = disc_loss_real + disc_loss_fake
-
-            # === Generator update ===
-            gen_logits = self.discriminator(loss_comps['x_0_pushed_hat'])  # no detach!
-            gen_loss = F.binary_cross_entropy_with_logits(gen_logits, torch.ones_like(gen_logits))
-
-            loss = loss + gen_loss + 0.25 * disc_loss
-
-            losses.update({'gen_loss': gen_loss, 'disc_loss': disc_loss})
+        if discriminator:
+            d_fake = discriminator(loss_comps['x_0_pushed_hat'])
+            adv_loss_our = F.binary_cross_entropy_with_logits(d_fake, torch.ones_like(d_fake))
+            losses.update({'adv_loss_our': adv_loss_our})
+            loss += adv_loss_our * 0.01
 
         losses.update({'loss': loss})
 
