@@ -27,8 +27,10 @@ def convert_no_basic_to_str_from_any(p: Any):
 
 class NeptuneLogger(BaseLogger):
 
-    def __init__(self, project=None, *args, **kwargs):
+    def __init__(self, project=None, stdout=True, stderr=True, *args, **kwargs):
         super(NeptuneLogger, self).__init__(*args, **kwargs)
+        if self.rank != 0:
+            return
         import neptune
         from pathlib import Path
         home_path_api_token = Path.home() / '.neptune' / 'token.txt'
@@ -48,39 +50,48 @@ class NeptuneLogger(BaseLogger):
             if local_path_api_project.exists():
                 project = local_path_api_project.read_text().strip()
             else:
-                warnings.warn('''\n Please create a file at neptune/project.txt with your Neptune project name\n''')
+                warnings.warn('''Please create a file at neptune/project.txt with your Neptune project name''')
                 raise FileNotFoundError('Neptune project not found')
 
         self.run = neptune.init_run(
             project=project,
             api_token=api_token,
+            capture_stdout=stdout,
+            capture_stderr=stderr
         )
 
     def stop(self):
-        self.run.stop()
+        if self.rank == 0:
+            self.run.stop()
 
     def log(self, name: str, data: Any, step=None):
-        self.run[name].append(data)
+        if self.rank == 0:
+            self.run[name].append(data)
 
     def _log_fig(self, name: str, fig: Any):
-        if isinstance(fig, np.ndarray):
-            fig = Image.fromarray(fig)
-        self.run[name].append(fig)
+        if self.rank == 0:
+            if isinstance(fig, np.ndarray):
+                if fig.dtype != np.uint8:
+                    fig = fig * 255
+                    fig = fig.astype(np.uint8)
+                fig = Image.fromarray(fig)
+            self.run[name].append(fig)
 
     def log_hparams(self, params: Dict[str, Any]):
-        params = convert_no_basic_to_str(params)
-        self.run['hyperparameters'] = params
+        if self.rank == 0:
+            params = convert_no_basic_to_str(params)
+            self.run['hyperparameters'] = params
 
     def log_params(self, params: Dict[str, Any]):
-        params = convert_no_basic_to_str(params)
-        self.run['parameters'] = params
+        if self.rank == 0:
+            params = convert_no_basic_to_str(params)
+            self.run['parameters'] = params
 
     def add_tags(self, tags: List[str]):
-        self.run['sys/tags'].add(tags)
+        if self.rank == 0:
+            self.run['sys/tags'].add(tags)
 
     def log_name_params(self, name: str, params: Any):
-        params = convert_no_basic_to_str_from_any(params)
-        self.run[name] = params
-
-    def info(self, msg: str):
-        print(msg)
+        if self.rank == 0:
+            params = convert_no_basic_to_str_from_any(params)
+            self.run[name] = params

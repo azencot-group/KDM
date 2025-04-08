@@ -4,9 +4,10 @@ from typing import Dict, Any, List, Union
 
 class BaseLogger(ABC):
 
-    def __init__(self, no_plot: bool = False, *args, **kwargs):
+    def __init__(self, no_plot: bool = False, rank: int = 0, *args, **kwargs):
         super(BaseLogger, self).__init__()
         self.no_plot = no_plot
+        self.rank = rank
 
     def __enter__(self):
         return self

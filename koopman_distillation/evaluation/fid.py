@@ -1,11 +1,17 @@
 import pickle
 import os
-
+import sys
 import scipy
 import torch
 import tqdm
 
 import numpy as np
+
+sys.path.append('.')
+sys.path.append('..')
+sys.path.append('../../')
+sys.path.append('../../../')
+sys.path.append('../edm')
 
 from edm.dnnlib.util import open_url
 from koopman_distillation.data.data_loading.data_loaders import load_data_for_testing

@@ -12,43 +12,82 @@ class PrintLogger(BaseLogger):
         from PIL.Image import Image
         from matplotlib import pyplot as plt
         import numpy as np
+        import torch as th
         self.Image = Image
         self.plt = plt
         self.np = np
+        self.th = th
 
     def stop(self):
         pass
 
     def log(self, name: str, data: Any, step=None):
-        print(f'{name}: {data}' if step is None else f'step {step}, {name}: {data:.4e}')
+        if self.rank == 0:
+            print(f'{name}: {data}' if step is None else f'step {step}, {name}: {data:.4e}')
 
     def _log_fig(self, name: str, fig: Any):
-        if isinstance(fig, self.Image):
-            fig = self.np.asarray(fig)
-            self.plt.imshow(fig)
-        elif isinstance(fig, self.np.ndarray):
-            self.plt.imshow(fig)
-        else:
-            self.plt.show()
+        if self.rank == 0:
+            if isinstance(fig, self.Image):
+                fig = self.np.asarray(fig)
+                self.plt.imshow(fig)
+            elif isinstance(fig, self.np.ndarray):
+                # higher resolution
+                sizes = self.np.shape(fig)
+                plt_fig = self.plt.figure()
+                plt_fig.set_size_inches((1. * sizes[1] / sizes[0])*10, 10, forward=False)
+                ax = self.plt.Axes(plt_fig, [0., 0., 1., 1.])
+                ax.set_axis_off()
+                plt_fig.add_axes(ax)
+                ax.imshow(fig)
+                self.plt.show()
+            elif isinstance(fig, self.th.Tensor):
+                fig = fig.cpu().detach().numpy()
+                sizes = self.np.shape(fig)
+                plt_fig = self.plt.figure()
+                plt_fig.set_size_inches((1. * sizes[1] / sizes[0])*10, 10, forward=False)
+                ax = self.plt.Axes(plt_fig, [0., 0., 1., 1.])
+                ax.set_axis_off()
+                plt_fig.add_axes(ax)
+                ax.imshow(fig)
+                self.plt.show()
+            else:
+                self.plt.show()
 
     def log_hparams(self, params: Dict[str, Any]):
-        print('hyperparameters:')
-        pprint(params)
+        if self.rank == 0:
+            print('hyperparameters:')
+            pprint(params)
 
     def log_params(self, params: Dict[str, Any]):
-        print('params:')
-        pprint(params)
+        if self.rank == 0:
+            print('params:')
+            pprint(params)
 
     def add_tags(self, tags: List[str]):
-        print('tags:')
-        pprint(tags)
+        if self.rank == 0:
+            print('tags:')
+            pprint(tags)
 
     def log_name_params(self, name: str, params: Any):
-        print(f'{name}:')
-        pprint(params)
+        if self.rank == 0:
+            print(f'{name}:')
+            pprint(params)
 
     def info(self, msg: str):
-        print(msg)
+        if self.rank == 0:
+            print(msg)
+
+
+class TqdmLogger(PrintLogger):
+
+    def __init__(self, *args, **kwargs):
+        super(TqdmLogger, self).__init__(*args, **kwargs)
+        from tqdm import tqdm
+        self.tqdm = tqdm
+
+    def log(self, name: str, data: Any, step=None):
+        if self.rank == 0:
+            self.tqdm.write(f'{name}: {data}' if step is None else f'step {step}, {name}: {data:.4e}')
 
 
 class LoggerL(PrintLogger):
@@ -68,4 +107,5 @@ class LoggerL(PrintLogger):
         self.logging = logging
 
     def log(self, text: str, data: Any, step=None):
-        self.logging.info(text % data)
+        if self.rank == 0:
+            self.logging.info(text % data)

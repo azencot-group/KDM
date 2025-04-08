@@ -16,7 +16,7 @@ def load_arguments(parser) -> None:
     parser.add_argument('--dataset', type=str, default=Datasets.Cifar10_1M_Uncond)
     parser.add_argument('--datapath', type=str,
                         default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond')
-    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--num_workers', type=int, default=6)
 
     # --- training --- #

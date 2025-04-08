@@ -13,35 +13,43 @@ class CompositeLogger(BaseLogger):
         return self
 
     def stop(self):
-        for logger in self.loggers:
-            logger.stop()
+        if self.rank == 0:
+            for logger in self.loggers:
+                logger.stop()
 
     def __exit__(self, type, value, traceback):
         self.stop()
 
     def log(self, name: str, data: Any, step=None):
-        for logger in self.loggers:
-            logger.log(name, data, step)
+        if self.rank == 0:
+            for logger in self.loggers:
+                logger.log(name, data, step)
 
     def _log_fig(self, name: str, fig: Any):
-        for logger in self.loggers:
-            logger.log_fig(name, fig)
+        if self.rank == 0:
+            for logger in self.loggers:
+                logger.log_fig(name, fig)
 
     def log_hparams(self, params: Dict[str, Any]):
-        for logger in self.loggers:
-            logger.log_hparams(params)
+        if self.rank == 0:
+            for logger in self.loggers:
+                logger.log_hparams(params)
 
     def log_params(self, params: Dict[str, Any]):
-        for logger in self.loggers:
-            logger.log_params(params)
+        if self.rank == 0:
+            for logger in self.loggers:
+                logger.log_params(params)
 
     def add_tags(self, tags: List[str]):
-        for logger in self.loggers:
-            logger.add_tags(tags)
+        if self.rank == 0:
+            for logger in self.loggers:
+                logger.add_tags(tags)
 
-    def log_name_params(self, name: str, params: Any):
-        for logger in self.loggers:
-            logger.log_name_params(name, params)
+    def log_name_params(self, name : str, params: Any):
+        if self.rank == 0:
+            for logger in self.loggers:
+                logger.log_name_params(name, params)
 
     def info(self, msg: str):
-        print(msg)
+        if self.rank == 0:
+            print(msg)
