@@ -935,6 +935,7 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
                  initial_noise_factor=80,
                  cond_type=CondType.OnlyEncDec,
                  contrastive_estimation=0,
+                 noisy_latent_after_push=0,
                  ):
         super().__init__()
 
@@ -947,6 +948,7 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
         self.noisy_latent = noisy_latent
         self.rec_loss_type = rec_loss_type
         self.contrastive_estimation = contrastive_estimation
+        self.noisy_latent_after_push = noisy_latent_after_push
 
         self.lpips = LPIPS(replace_pooling=True, reduction="none")
 
@@ -1025,6 +1027,9 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
         if self.cond_type == CondType.KoopmanMatrixAddition:
             z_0_pushed += self.koopman_control(labels).reshape(z_0.shape)
 
+        if self.noisy_latent_after_push > 0:
+            z_0_pushed = z_0_pushed + torch.randn_like(z_0_pushed) * self.noisy_latent_after_push
+
         x_0_pushed_hat = self.x0_observables_decoder(z_0_pushed, t, labels)
         x_0_hat = self.x0_observables_decoder(z_0_noisy, t, labels)
 
@@ -1094,7 +1099,7 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
 
         return losses
 
-    def sample(self, batch_size, device, data_shape, sample_noise_z_T=0, sample_noise_z0_push=0, labels=None):
+    def sample(self, batch_size, device, data_shape, sample_noise_z_T=0, sample_noise_z0_after_push=0, labels=None):
 
         x_T = torch.randn((batch_size, *data_shape)).to(device) * self.initial_noise_factor
 
@@ -1110,6 +1115,6 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
         if self.cond_type == CondType.KoopmanMatrixAddition:
             zt0_push += self.koopman_control(labels).reshape(zt0_push.shape)
 
-        xt0_push_hat = self.x0_observables_decoder(zt0_push + torch.randn_like(z_T) * sample_noise_z0_push, t, labels)
+        xt0_push_hat = self.x0_observables_decoder(zt0_push + torch.randn_like(z_T) * sample_noise_z0_after_push, t, labels)
 
         return xt0_push_hat, x_T

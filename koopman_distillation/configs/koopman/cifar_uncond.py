@@ -45,6 +45,7 @@ def load_arguments(parser) -> None:
 
     # --- koopman parameters --- #
     parser.add_argument('--noisy_latent', type=float, default=0.4)
+    parser.add_argument('--noisy_latent_after_push', type=float, default=0)
     parser.add_argument('--initial_noise_factor', type=float, default=80)
     parser.add_argument('--add_sampling_noise', type=float, default=0.4)
     parser.add_argument('--cond_type', type=str, default=CondType.Uncond)
