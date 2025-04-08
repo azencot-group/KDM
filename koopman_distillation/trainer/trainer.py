@@ -1,12 +1,10 @@
 # code was inspired by the code repository of flow matching
-import time
 import copy
 
 import numpy as np
 import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.distributed import (init_process_group, destroy_process_group, all_gather_object, all_gather,
-                               barrier)
+from torch.distributed import (destroy_process_group,barrier)
 
 from tqdm.auto import tqdm, trange
 from accelerate.utils import set_seed
@@ -20,7 +18,7 @@ from koopman_distillation.utils.dist_lib import get_rank, get_world_size, is_dis
 from old.distillation.utils.display import plot_spectrum
 
 
-class MockDDP(torch.nn.Module):
+class MockDDPKoopman(torch.nn.Module):
     def __init__(self, model):
         super().__init__()
 
@@ -30,8 +28,18 @@ class MockDDP(torch.nn.Module):
         return self.module(xt, xT, labels)
 
 
+class MockDDPDiscriminator(torch.nn.Module):
+    def __init__(self, model):
+        super().__init__()
+
+        self.module = model
+
+    def forward(self, x):
+        return self.module(x)
+
+
 class TrainLoop:
-    def __init__(self, args, model, train_data, test_data, batch_size, device, output_dir, logger,
+    def __init__(self, args, model, train_data, test_data, batch_size, device, logger,
                  num_accumulation_rounds, iterations=400001, lr=0.0003, print_every=50, data_shape=(2),
                  teach_model=False, advers=False, cond=False):
         self.args = args
@@ -65,8 +73,8 @@ class TrainLoop:
             self.model = DDP(self.model, device_ids=[device])
             self.discriminator = DDP(self.discriminator, device_ids=[device])
         else:
-            self.model = MockDDP(self.model)
-            self.discriminator = MockDDP(self.discriminator)
+            self.model = MockDDPKoopman(self.model)
+            self.discriminator = MockDDPDiscriminator(self.discriminator)
         if is_main_process(self.args):
             print(f"Model Parameters: {sum(p.numel() for p in model.parameters()):,}")
 

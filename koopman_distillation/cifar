@@ -6,11 +6,19 @@
 ################################################################################################
 
 #SBATCH --partition rtx6000			### specify partition name where to run a job. main: all nodes; gtx1080: 1080 gpu card nodes; rtx2080: 2080 nodes; teslap100: p100 nodes; titanrtx: titan nodes
+##SBATCH --partition rtx4090
+
 #SBATCH --qos azencot
-#SBATCH --gpus=rtx_6000:6			# 1 GPU
-#SBATCH --time 7-00:00:00			### limit the time of job running. Make sure it is not greater than the partition time limit!! Format: D-H:MM:SS
+#SBATCH --nodes=1
+
+#SBATCH --gpus=rtx_6000:3		# 1 GPU
+##SBATCH --gpus=rtx_4090:3
+
+#SBATCH --time 4-00:00:00			### limit the time of job running. Make sure it is not greater than the partition time limit!! Format: D-H:MM:SS
 #SBATCH --job-name koop_dist			### name of the job
 #SBATCH --output train-%J.out			### output log for running job - %J for job number
+#SBATCH --cpus-per-task=3
+#SBATCH --exclude=ise-6000-07,ise-6000-05,ise-6000-06,cs-6000-01,ise-6000-01,cs-6000-03
 
 ### Print some data to output file ###
 echo `date`
@@ -21,6 +29,6 @@ echo -e "SLURM_JOB_NODELIST:\t" $SLURM_JOB_NODELIST "\n\n"
 module load anaconda				### load anaconda module (must be present when working with conda environments)
 source activate edm				### activate a conda environment, replace my_env with your conda environment
 
-python main.py --config_name koopman/cifar_uncond --neptune --gpu_num 6 --neptune --batch_size 768
-#python main.py --config_name koopman/cifar_cond --neptune --cond_type KoopmanMatrixAddition --gpu_num 6 --neptune --batch_size 768
-#python main.py --config_name koopman/cifar_cond --neptune --cond_type OnlyEncDec --gpu_num 6 --neptune --batch_size 768
+python main.py --config_name koopman/cifar_uncond --neptune --gpu_num 3 --batch_size 384 --nar 2
+#python main.py --config_name koopman/cifar_cond --neptune --cond_type KoopmanMatrixAddition --gpu_num 2 --batch_size 256 --nar 2
+#python main.py --config_name koopman/cifar_cond --neptune --cond_type OnlyEncDec --gpu_num 6 --batch_size 768 --nar 2

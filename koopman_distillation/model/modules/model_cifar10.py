@@ -1079,7 +1079,7 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
             d_fake = discriminator(loss_comps['x_0_pushed_hat'])
             adv_loss_our = F.binary_cross_entropy_with_logits(d_fake, torch.ones_like(d_fake))
             losses.update({'adv_loss_our': adv_loss_our})
-            loss += adv_loss_our * 0.05 # original was 0.01
+            loss += adv_loss_our * 0.01
 
         losses.update({'loss': loss})
 

@@ -22,6 +22,7 @@ from koopman_distillation.utils.loading_models import create_distillation_model,
 from koopman_distillation.utils.loggers.logging import create_workdir, log_config_and_tags, print_model_params
 from koopman_distillation.utils.dist_lib import is_distributed, is_main_process
 
+
 def next_free_port(port=12355, max_port=65535):
     rand_offset = random.randint(0, 1000)
     port += rand_offset
@@ -58,8 +59,9 @@ def main_rank(rank, args, port):
 def main(args):
     # --- create logging --- #
     with CompositeLogger(loggers=[TqdmLogger(no_plot=True),
-                                      NeptuneLogger(stdout=False, stderr=False, rank=args.rank)]
-                             , rank=args.rank) if args.neptune else TqdmLogger(rank=args.rank) as logger:
+                                  NeptuneLogger(stdout=False, stderr=False, rank=args.rank,
+                                                project=args.neptune_projects)]
+            , rank=args.rank) if args.neptune else TqdmLogger(rank=args.rank) as logger:
 
         if is_distributed(args):
             device = args.rank
@@ -111,7 +113,6 @@ def main(args):
             batch_size=local_batch_size,
             device=device,
             logger=logger,
-            ema_rate=args.ema_rate,
             num_accumulation_rounds=num_accumulation_rounds,
             advers=args.advers,
             cond=args.cond_type != CondType.Uncond,
@@ -129,5 +130,5 @@ if __name__ == "__main__":
         port = str(next_free_port())
         mp.spawn(main_rank, args=(args, port), nprocs=world_size)
     else:
+        args.rank = 0
         main(args)
-
