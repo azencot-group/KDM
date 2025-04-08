@@ -1115,6 +1115,250 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
         if self.cond_type == CondType.KoopmanMatrixAddition:
             zt0_push += self.koopman_control(labels).reshape(zt0_push.shape)
 
-        xt0_push_hat = self.x0_observables_decoder(zt0_push + torch.randn_like(z_T) * sample_noise_z0_after_push, t, labels)
+        xt0_push_hat = self.x0_observables_decoder(zt0_push + torch.randn_like(z_T) * sample_noise_z0_after_push, t,
+                                                   labels)
+
+        return xt0_push_hat, x_T
+
+
+class InverseLinear(nn.Module):
+    def __init__(self, linear_layer: nn.Linear):
+        super().__init__()
+        self.linear = linear_layer
+
+    def forward(self, y):
+        # Subtract bias (broadcast over batch)
+        if self.linear.bias is not None:
+            y = y - self.linear.bias
+
+        # Get weight and compute pseudo-inverse
+        W = self.linear.weight  # Shape: [out_features, in_features]
+        W_pinv = torch.linalg.pinv(W)  # [in_features, out_features]
+
+        # Invert transformation: x = W_inv @ (y - b)
+        x = y @ W_pinv.T  # Shape: [batch_size, in_features]
+        return x
+
+
+class AdversarialInvertibleOneStepKoopmanCifar10(torch.nn.Module):
+    def __init__(self,
+                 img_resolution,  # Image resolution at input/output.
+                 in_channels=3,  # Number of color channels at input.
+                 out_channels=3,  # Number of color channels at output.
+                 label_dim=0,  # Number of class labels, 0 = unconditional.
+                 augment_dim=0,  # Augmentation label dimensionality, 0 = no augmentation.
+
+                 model_channels=128,  # Base multiplier for the number of channels.
+                 channel_mult=[1, 2, 2, 2],  # Per-resolution multipliers for the number of channels.
+                 channel_mult_emb=4,  # Multiplier for the dimensionality of the embedding vector.
+                 num_blocks=4,  # Number of residual blocks per resolution.
+                 attn_resolutions=[16],  # List of resolutions with self-attention.
+                 dropout=0.10,  # Dropout probability of intermediate activations.
+                 label_dropout=0,  # Dropout probability of class labels for classifier-free guidance.
+
+                 embedding_type='positional',  # Timestep embedding type: 'positional' for DDPM++, 'fourier' for NCSN++.
+                 channel_mult_noise=1,  # Timestep embedding size: 1 for DDPM++, 2 for NCSN++.
+                 encoder_type='standard',  # Encoder architecture: 'standard' for DDPM++, 'residual' for NCSN++.
+                 decoder_type='standard',  # Decoder architecture: 'standard' for both DDPM++ and NCSN++.
+                 resample_filter=[1, 1],  # Resampling filter: [1,1] for DDPM++, [1,3,3,1] for NCSN++.
+                 img_channels=3,  # Number of color channels.
+                 use_fp16=False,  # Execute the underlying model at FP16 precision?
+                 noisy_latent=0.2,
+                 rec_loss_type=RecLossType.BOTH,
+                 add_sampling_noise=1,
+                 psudo_huber_c=0.03,
+                 initial_noise_factor=80,
+                 cond_type=CondType.OnlyEncDec,
+                 contrastive_estimation=0,
+                 noisy_latent_after_push=0,
+                 ):
+        super().__init__()
+
+        self.img_resolution = img_resolution
+        self.img_channels = img_channels
+        self.label_dim = label_dim
+        self.use_fp16 = use_fp16
+        self.add_sampling_noise = add_sampling_noise
+        self.initial_noise_factor = initial_noise_factor
+        self.noisy_latent = noisy_latent
+        self.rec_loss_type = rec_loss_type
+        self.contrastive_estimation = contrastive_estimation
+        self.noisy_latent_after_push = noisy_latent_after_push
+
+        self.lpips = LPIPS(replace_pooling=True, reduction="none")
+
+        self.x_0_observables_encoder = SongUNet(img_resolution=img_resolution,
+                                                in_channels=in_channels,
+                                                out_channels=out_channels,
+                                                label_dim=label_dim,
+                                                augment_dim=augment_dim,
+                                                model_channels=model_channels,
+                                                channel_mult=channel_mult,
+                                                channel_mult_emb=channel_mult_emb,
+                                                num_blocks=num_blocks,
+                                                attn_resolutions=attn_resolutions,
+                                                dropout=dropout,
+                                                label_dropout=label_dropout,
+                                                embedding_type=embedding_type,
+                                                channel_mult_noise=channel_mult_noise,
+                                                encoder_type=encoder_type,
+                                                decoder_type=decoder_type,
+                                                resample_filter=resample_filter)
+
+        self.x0_observables_decoder = SongUNet(img_resolution=img_resolution,
+                                               in_channels=out_channels,
+                                               out_channels=in_channels,
+                                               label_dim=label_dim,
+                                               augment_dim=augment_dim,
+                                               model_channels=model_channels,
+                                               channel_mult=channel_mult,
+                                               channel_mult_emb=channel_mult_emb,
+                                               num_blocks=num_blocks,
+                                               attn_resolutions=attn_resolutions,
+                                               dropout=dropout,
+                                               label_dropout=label_dropout,
+                                               embedding_type=embedding_type,
+                                               channel_mult_noise=channel_mult_noise,
+                                               encoder_type=encoder_type,
+                                               decoder_type=decoder_type,
+                                               resample_filter=resample_filter)
+
+        self.xT_observables_decoder = SongUNet(img_resolution=img_resolution,
+                                               in_channels=out_channels,
+                                               out_channels=in_channels,
+                                               label_dim=label_dim,
+                                               augment_dim=augment_dim,
+                                               model_channels=model_channels, # reduce to save parameters
+                                               channel_mult=channel_mult,
+                                               channel_mult_emb=channel_mult_emb,
+                                               num_blocks=num_blocks,
+                                               attn_resolutions=attn_resolutions,
+                                               dropout=dropout,
+                                               label_dropout=label_dropout,
+                                               embedding_type=embedding_type,
+                                               channel_mult_noise=channel_mult_noise,
+                                               encoder_type=encoder_type,
+                                               decoder_type=decoder_type,
+                                               resample_filter=resample_filter)
+
+        self.x_T_observables_encoder = SongUNet(img_resolution=img_resolution,
+                                                in_channels=in_channels,
+                                                out_channels=out_channels,
+                                                label_dim=label_dim,
+                                                augment_dim=augment_dim,
+                                                model_channels=model_channels,
+                                                channel_mult=channel_mult,
+                                                channel_mult_emb=channel_mult_emb,
+                                                num_blocks=num_blocks,
+                                                attn_resolutions=attn_resolutions,
+                                                dropout=dropout,
+                                                label_dropout=label_dropout,
+                                                embedding_type=embedding_type,
+                                                channel_mult_noise=channel_mult_noise,
+                                                encoder_type=encoder_type,
+                                                decoder_type=decoder_type,
+                                                resample_filter=resample_filter)
+
+        self.koopman_operator = torch.nn.Linear(32 * 32 * out_channels, 32 * 32 * out_channels, bias=False)
+        self.inverse_layer = InverseLinear(self.koopman_operator)
+        self.psudo_huber_c = psudo_huber_c
+
+        self.cond_type = cond_type
+        if cond_type == CondType.KoopmanMatrixAddition:
+            self.koopman_control = torch.nn.Linear(label_dim, 32 * 32 * out_channels)
+
+    def forward(self, x_0, x_T, labels=None):
+        T = torch.ones((x_0.shape[0],)).to(x_0.device)  # no use in one step, just a placeholder
+        t = torch.zeros((x_0.shape[0],)).to(x_0.device)  # no use in one step, just a placeholder
+
+        z_0 = self.x_0_observables_encoder(x_0, t, labels)
+        z_T = self.x_T_observables_encoder(x_T, T, labels)
+
+        z_0_noisy = z_0 + torch.randn_like(z_0) * self.noisy_latent
+        z_T_noisy = z_T + torch.randn_like(z_T) * self.noisy_latent
+
+        z_0_pushed = self.koopman_operator(z_T_noisy.reshape(x_0.shape[0], -1)).reshape(z_0.shape)
+        z_T_pushed = self.inverse_layer(z_0_noisy.reshape(x_0.shape[0], -1)).reshape(z_0.shape)
+
+        if self.cond_type == CondType.KoopmanMatrixAddition:
+            z_0_pushed += self.koopman_control(labels).reshape(z_0.shape)
+            z_T_pushed += self.koopman_control(labels).reshape(z_0.shape)
+
+        if self.noisy_latent_after_push > 0:
+            z_0_pushed = z_0_pushed + torch.randn_like(z_0_pushed) * self.noisy_latent_after_push
+            z_T_pushed = z_T_pushed + torch.randn_like(z_T_pushed) * self.noisy_latent_after_push
+
+        x_0_pushed_hat = self.x0_observables_decoder(z_0_pushed, t, labels)
+        x_T_pushed_hat = self.xT_observables_decoder(z_T_pushed, t, labels)
+        x_0_hat = self.x0_observables_decoder(z_0_noisy, t, labels)
+        x_T_hat = self.xT_observables_decoder(z_T_noisy, t, labels)
+
+        return {'x_0': x_0, 'x_T': x_T, 'z_0': z_0, 'z_T': z_T, 'z_0_pushed': z_0_pushed, 'x_0_hat': x_0_hat,
+                'x_0_pushed_hat': x_0_pushed_hat, 'koopman_op': self.koopman_operator, 'z_T_pushed': z_T_pushed,
+                'x_T_hat': x_T_hat, 'x_T_pushed_hat': x_T_pushed_hat}
+
+    def loss(self, loss_comps, discriminator=None):
+
+        losses = {}
+        latent_loss = ((loss_comps['z_0'] - loss_comps['z_0_pushed']) ** 2).mean()
+        latent_loss += ((loss_comps['z_T'] - loss_comps['z_T_pushed']) ** 2).mean()
+        losses.update({'latent_loss': latent_loss})
+
+        # Combine
+        if self.rec_loss_type == RecLossType.LPIPS:
+            push_rec_loss = self.lpips((loss_comps['x_0'] + 1) / 2,
+                                       (loss_comps['x_0_pushed_hat'] + 1) / 2).mean()
+            rec_loss = self.lpips((loss_comps['x_0'] + 1) / 2,
+                                  (loss_comps['x_0_hat'] + 1) / 2).mean()
+            losses.update({'push_rec_loss': push_rec_loss, 'rec_loss': rec_loss})
+
+            # inverse loss
+            push_rec_loss_inv = self.lpips((loss_comps['x_T'] + 1) / 2,
+                                           (loss_comps['x_T_pushed_hat'] + 1) / 2).mean()
+            rec_loss_inv = self.lpips((loss_comps['x_T'] + 1) / 2,
+                                      (loss_comps['x_T_hat'] + 1) / 2).mean()
+            losses.update({'push_rec_loss_inv': push_rec_loss_inv, 'rec_loss_inv': rec_loss_inv})
+
+            loss = latent_loss + rec_loss + push_rec_loss + push_rec_loss_inv + rec_loss_inv
+
+        else:
+            loss = None
+            raise ValueError(f"Invalid rec loss type: {self.rec_loss_type}")
+
+        if discriminator:
+            d_fake = discriminator(loss_comps['x_0_pushed_hat'])
+            adv_loss_our = F.binary_cross_entropy_with_logits(d_fake, torch.ones_like(d_fake))
+            losses.update({'adv_loss_our': adv_loss_our})
+            loss += adv_loss_our * 0.01
+
+        if self.contrastive_estimation > 0:
+            contrastive_loss_value = contrastive_loss(loss_comps['z_0'].reshape(loss_comps['z_0'].shape[0], -1),
+                                                      loss_comps['z_T'].reshape(loss_comps['z_0'].shape[0],
+                                                                                -1)) * self.contrastive_estimation
+            losses.update({'contrastive_loss': contrastive_loss_value})
+            loss += contrastive_loss_value
+
+        losses.update({'loss': loss})
+
+        return losses
+
+    def sample(self, batch_size, device, data_shape, sample_noise_z_T=0, sample_noise_z0_after_push=0, labels=None):
+
+        x_T = torch.randn((batch_size, *data_shape)).to(device) * self.initial_noise_factor
+
+        T = torch.ones((x_T.shape[0],)).to(x_T.device)
+        t = torch.zeros((x_T.shape[0],)).to(x_T.device)
+
+        z_T = self.x_T_observables_encoder(x_T, T, labels)
+
+        if self.add_sampling_noise > 0:
+            z_T = z_T + torch.randn_like(z_T) * sample_noise_z_T
+
+        zt0_push = self.koopman_operator(z_T.reshape(x_T.shape[0], -1)).reshape(z_T.shape)
+        if self.cond_type == CondType.KoopmanMatrixAddition:
+            zt0_push += self.koopman_control(labels).reshape(zt0_push.shape)
+
+        xt0_push_hat = self.x0_observables_decoder(zt0_push + torch.randn_like(z_T) * sample_noise_z0_after_push, t,
+                                                   labels)
 
         return xt0_push_hat, x_T

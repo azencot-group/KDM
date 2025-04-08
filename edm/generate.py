@@ -309,14 +309,15 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
     # dist.print0(f'Generating {len(seeds)} images to "{outdir}"...')
     i = 0
     # for batch_seeds in tqdm.tqdm(rank_batches, unit='batch', disable=(dist.get_rank() != 0)):
-    path_to_save = '/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32cond_test_1M/'
+    net.eval()
+    path_to_save = '/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/imagenet64cond_test_1M/'
     how_much_to_gen = 1_000_000
     seed = 1111
     torch.manual_seed(seed)
     # change seed
     while True:
         torch.distributed.barrier()
-        batch_size = 512
+        batch_size = 256
         if batch_size == 0:
             continue
         latents = torch.randn([batch_size, net.img_channels, net.img_resolution, net.img_resolution], device=device)

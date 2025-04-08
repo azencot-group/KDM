@@ -21,4 +21,4 @@ echo -e "SLURM_JOB_NODELIST:\t" $SLURM_JOB_NODELIST "\n\n"
 ### Start your src_code below ####
 module load anaconda				### load anaconda module (must be present when working with conda environments)
 source activate edm				### activate a conda environment, replace my_env with your conda environment
-python generate.py --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-cifar10-32x32-cond-vp.pkl --outdir none
+python generate.py --network=https://nvlabs-fi-cdn.nvidia.com/edm/pretrained/edm-imagenet-64x64-cond-adm.pkl --outdir none

@@ -6,6 +6,7 @@ class Datasets:
 
 class DistillationModels:
     OneStepKOD = "Koopman Operator Distillation"
+    InverseOneStepKOD = "Inverse Koopman Operator Distillation"
 
 
 # --- models configurations --- #

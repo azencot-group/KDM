@@ -109,7 +109,7 @@ def sample_and_calculate_fid_for_test(model, data_shape, num_samples, device, ba
         else:
             labels = None
         x0_sample = model.sample(batch_size, device, data_shape, sample_noise_z_T=sample_noise_z_T,
-                                 sample_noise_z0_push=sample_noise_z0_push, labels=labels)
+                                 sample_noise_z0_after_push=sample_noise_z0_push, labels=labels)
         images = x0_sample[0].detach().cpu().numpy()
         for img in images:
             np.savez_compressed(f'{output_dir}/img{i}', img)
