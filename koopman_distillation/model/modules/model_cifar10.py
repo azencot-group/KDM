@@ -16,7 +16,7 @@ from torch import nn
 from torch.nn.functional import silu
 from piq import LPIPS
 
-from koopman_distillation.utils.math import psudo_hober_loss
+from koopman_distillation.utils.math import psudo_hober_loss, contrastive_loss
 from koopman_distillation.utils.names import RecLossType, CondType
 
 
@@ -934,6 +934,7 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
                  psudo_huber_c=0.03,
                  initial_noise_factor=80,
                  cond_type=CondType.OnlyEncDec,
+                 contrastive_estimation=0,
                  ):
         super().__init__()
 
@@ -945,6 +946,7 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
         self.initial_noise_factor = initial_noise_factor
         self.noisy_latent = noisy_latent
         self.rec_loss_type = rec_loss_type
+        self.contrastive_estimation = contrastive_estimation
 
         self.lpips = LPIPS(replace_pooling=True, reduction="none")
 
@@ -1080,6 +1082,13 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
             adv_loss_our = F.binary_cross_entropy_with_logits(d_fake, torch.ones_like(d_fake))
             losses.update({'adv_loss_our': adv_loss_our})
             loss += adv_loss_our * 0.01
+
+        if self.contrastive_estimation > 0:
+            contrastive_loss_value = contrastive_loss(loss_comps['z_0'].reshape(loss_comps['z_0'].shape[0], -1),
+                                                      loss_comps['z_T'].reshape(loss_comps['z_0'].shape[0],
+                                                                                -1)) * self.contrastive_estimation
+            losses.update({'contrastive_loss': contrastive_loss_value})
+            loss += contrastive_loss_value
 
         losses.update({'loss': loss})
 

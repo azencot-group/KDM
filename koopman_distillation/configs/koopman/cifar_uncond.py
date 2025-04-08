@@ -38,7 +38,6 @@ def load_arguments(parser) -> None:
 
     # losses
     parser.add_argument('--rec_loss_type', type=str, default=RecLossType.LPIPS)
-    parser.add_argument('--mixup', type=float, default=0)
     parser.add_argument('--psudo_huber_c', type=float, default=0.03)
 
     # --- sampling --- #
@@ -50,6 +49,7 @@ def load_arguments(parser) -> None:
     parser.add_argument('--add_sampling_noise', type=float, default=0.4)
     parser.add_argument('--cond_type', type=str, default=CondType.Uncond)
     parser.add_argument('--label_dim', type=int, default=0)
+    parser.add_argument('--contrastive_estimation', type=float, default=0)
 
     # --- adversarial --- #
     parser.add_argument('--advers', type=bool, default=True)
