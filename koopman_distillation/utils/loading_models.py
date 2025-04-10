@@ -43,8 +43,11 @@ def create_koopman_model(args):
                                                 initial_noise_factor=args.initial_noise_factor,
                                                 cond_type=args.cond_type,
                                                 label_dim=args.label_dim,
-                                                contrastive_estimation=args.contrastive_estimation,
                                                 noisy_latent_after_push=args.noisy_latent_after_push,
+                                                contrastive_estimation=args.contrastive_estimation,
+                                                contrast_x0_zT=args.contrast_x0_zT,
+                                                contrast_x0_z0=args.contrast_x0_z0,
+                                                contrast_xT_zT=args.contrast_xT_zT,
                                                 )
 
     else:

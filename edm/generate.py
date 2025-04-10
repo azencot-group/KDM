@@ -310,14 +310,14 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
     i = 0
     # for batch_seeds in tqdm.tqdm(rank_batches, unit='batch', disable=(dist.get_rank() != 0)):
     net.eval()
-    path_to_save = '/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/imagenet64cond_test_1M/'
-    how_much_to_gen = 1_000_000
+    path_to_save = '/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/AFHQV2_250K/'
+    how_much_to_gen = 250_000
     seed = 1111
     torch.manual_seed(seed)
     # change seed
     while True:
         torch.distributed.barrier()
-        batch_size = 256
+        batch_size = 512
         if batch_size == 0:
             continue
         latents = torch.randn([batch_size, net.img_channels, net.img_resolution, net.img_resolution], device=device)
@@ -336,14 +336,17 @@ def main(network_pkl, outdir, subdirs, seeds, class_idx, max_batch_size, device=
         images, gen_path = sampler_fn(net, latents, class_labels, randn_like=torch.randn_like, **sampler_kwargs)
         # plot_image_sequence(torch.stack(gen_path)[:, 0])
 
-        for path, lbl in zip(torch.stack(gen_path).permute(1, 0, 2, 3, 4), class_labels):
+        # for path, lbl in zip(torch.stack(gen_path).permute(1, 0, 2, 3, 4), class_labels):  # cond sampling
+        for path in torch.stack(gen_path).permute(1, 0, 2, 3, 4):
             os.makedirs(path_to_save, exist_ok=True)
-            data = {
-                'endpoints': path[[0, -1]].detach().cpu().numpy(),
-                'label': lbl.detach().cpu().numpy()
-            }
-            np.savez_compressed(f'{path_to_save}path{i}',**data)
-            # np.savez_compressed(f'{path_to_save}path{i}', path.detach().cpu().numpy())
+            # --- cond sampling --- #
+            # data = {
+            #     'endpoints': path[[0, -1]].detach().cpu().numpy(),
+            #     'label': lbl.detach().cpu().numpy()
+            # }
+            # np.savez_compressed(f'{path_to_save}path{i}',**data)
+
+            np.savez_compressed(f'{path_to_save}path{i}', path[[0, -1]].detach().cpu().numpy())
             dist.print0(f'done saving {i}th image path')
             i += 1
             if i == how_much_to_gen:

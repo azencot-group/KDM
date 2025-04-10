@@ -96,8 +96,6 @@ class TrainLoop:
         for k, v in losses.items():
             self.logger.log(k, v.item(), iteration)
 
-        # plot qualitative results
-        plot_samples(self.logger, self.ema, self.batch_size, self.device, self.data_shape, self.output_dir, self.cond)
 
         # evaluate fid for cifar10
         if iteration % (self.print_every * 100) == 0 and self.data_shape[0] == 3:
@@ -122,6 +120,9 @@ class TrainLoop:
                                                  )
             self.logger.log('model_fid', fid_model, iteration)
             plot_spectrum(self.model.koopman_operator.weight.data.cpu().detach().numpy(), self.output_dir, self.logger)
+            # plot qualitative results
+            plot_samples(self.logger, self.ema, self.batch_size, self.device, self.data_shape, self.output_dir,
+                         self.cond)
 
             if fid_ema < self.best_fid_ema:
                 torch.save(self.model, f'{self.output_dir}/ema_model.pt')

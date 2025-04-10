@@ -46,8 +46,8 @@ class Cifar10DatasetCond(torch.utils.data.Dataset):
     def __getitem__(self, ix):
         data = np.load(self.paths[ix])
         dynamics = data['endpoints']
-        x0: Tensor = torch.tensor(dynamics[-1]).float()
-        xT: Tensor = torch.tensor(dynamics[0]).float()
+        x0: Tensor = torch.tensor(dynamics[0]).float()
+        xT: Tensor = torch.tensor(dynamics[-1]).float()
 
         label = data['label']
 

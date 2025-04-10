@@ -936,6 +936,9 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
                  cond_type=CondType.OnlyEncDec,
                  contrastive_estimation=0,
                  noisy_latent_after_push=0,
+                 contrast_x0_zT=0,
+                 contrast_x0_z0=0,
+                 contrast_xT_zT=0,
                  ):
         super().__init__()
 
@@ -949,6 +952,9 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
         self.rec_loss_type = rec_loss_type
         self.contrastive_estimation = contrastive_estimation
         self.noisy_latent_after_push = noisy_latent_after_push
+        self.contrast_x0_zT = contrast_x0_zT
+        self.contrast_x0_z0 = contrast_x0_z0
+        self.contrast_xT_zT = contrast_xT_zT
 
         self.lpips = LPIPS(replace_pooling=True, reduction="none")
 
@@ -1012,6 +1018,27 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
         self.cond_type = cond_type
         if cond_type == CondType.KoopmanMatrixAddition:
             self.koopman_control = torch.nn.Linear(label_dim, 32 * 32 * out_channels)
+
+        if self.contrast_x0_zT > 0:
+            self.contrast_layer_x0_zT = nn.Sequential(
+                nn.Linear(32 * 32 * in_channels, 256),
+                nn.ReLU(),
+                nn.Linear(256, 32 * 32 * out_channels)
+            )
+
+        if self.contrast_x0_z0 > 0:
+            self.contrast_layer_x0_z0 = nn.Sequential(
+                nn.Linear(32 * 32 * in_channels, 256),
+                nn.ReLU(),
+                nn.Linear(256, 32 * 32 * out_channels)
+            )
+
+        if self.contrast_xT_zT > 0:
+            self.contrast_layer_xT_zT = nn.Sequential(
+                nn.Linear(32 * 32 * in_channels, 256),
+                nn.ReLU(),
+                nn.Linear(256, 32 * 32 * out_channels)
+            )
 
     def forward(self, x_0, x_T, labels=None):
         T = torch.ones((x_0.shape[0],)).to(x_0.device)  # no use in one step, just a placeholder
@@ -1094,6 +1121,27 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
                                                                                 -1)) * self.contrastive_estimation
             losses.update({'contrastive_loss': contrastive_loss_value})
             loss += contrastive_loss_value
+
+        if self.contrast_x0_zT > 0:
+            h_x0 = self.contrast_layer_x0_zT(loss_comps['x_0'].reshape(loss_comps['x_0'].shape[0], -1))
+            contrast_x0_zT = contrastive_loss(h_x0, loss_comps['z_T'].reshape(loss_comps['z_T'].shape[0],
+                                                                              -1)) * self.contrastive_estimation
+            losses.update({'contrast_x0_zT': contrast_x0_zT})
+            loss += contrast_x0_zT
+
+        if self.contrast_x0_z0 > 0:
+            h_x0 = self.contrast_layer_x0_z0(loss_comps['x_0'].reshape(loss_comps['x_0'].shape[0], -1))
+            contrast_x0_z0 = contrastive_loss(h_x0, loss_comps['z_0'].reshape(loss_comps['z_0'].shape[0],
+                                                                              -1)) * self.contrastive_estimation
+            losses.update({'contrast_x0_z0': contrast_x0_z0})
+            loss += contrast_x0_z0
+
+        if self.contrast_xT_zT > 0:
+            h_x0 = self.contrast_layer_xT_zT(loss_comps['x_T'].reshape(loss_comps['x_0'].shape[0], -1))
+            contrast_xT_zT = contrastive_loss(h_x0, loss_comps['z_T'].reshape(loss_comps['z_T'].shape[0],
+                                                                              -1)) * self.contrastive_estimation
+            losses.update({'contrast_xT_zT': contrast_xT_zT})
+            loss += contrast_xT_zT
 
         losses.update({'loss': loss})
 
@@ -1228,7 +1276,7 @@ class AdversarialInvertibleOneStepKoopmanCifar10(torch.nn.Module):
                                                out_channels=in_channels,
                                                label_dim=label_dim,
                                                augment_dim=augment_dim,
-                                               model_channels=model_channels, # reduce to save parameters
+                                               model_channels=model_channels - 32,  # reduce to save parameters
                                                channel_mult=channel_mult,
                                                channel_mult_emb=channel_mult_emb,
                                                num_blocks=num_blocks,
@@ -1259,7 +1307,7 @@ class AdversarialInvertibleOneStepKoopmanCifar10(torch.nn.Module):
                                                 decoder_type=decoder_type,
                                                 resample_filter=resample_filter)
 
-        self.koopman_operator = torch.nn.Linear(32 * 32 * out_channels, 32 * 32 * out_channels, bias=False)
+        self.koopman_operator = torch.nn.Linear(32 * 32 * out_channels, 32 * 32 * out_channels)
         self.inverse_layer = InverseLinear(self.koopman_operator)
         self.psudo_huber_c = psudo_huber_c
 

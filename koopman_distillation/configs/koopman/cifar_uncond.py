@@ -7,7 +7,7 @@ def load_arguments(parser) -> None:
     parser.add_argument('--neptune', type=bool, default=False)
     parser.add_argument('--neptune_projects', type=str, default='azencot-group/koopman-dis')
     parser.add_argument('--tags', type=list[str],
-                        default=['Adversarial', 'check uncond with cond code', 'Sanity Check new_main_7_4'])
+                        default=['contrastive estimations opposite'])
 
     # --- artifacts --- #
     parser.add_argument('--output_prefix_path', type=str,
@@ -51,6 +51,9 @@ def load_arguments(parser) -> None:
     parser.add_argument('--cond_type', type=str, default=CondType.Uncond)
     parser.add_argument('--label_dim', type=int, default=0)
     parser.add_argument('--contrastive_estimation', type=float, default=0)
+    parser.add_argument('--contrast_x0_zT', type=float, default=0)
+    parser.add_argument('--contrast_x0_z0', type=float, default=0)
+    parser.add_argument('--contrast_xT_zT', type=float, default=0)
 
     # --- adversarial --- #
     parser.add_argument('--advers', type=bool, default=True)

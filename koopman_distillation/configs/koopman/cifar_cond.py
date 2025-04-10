@@ -6,7 +6,7 @@ def load_arguments(parser) -> None:
     parser.add_argument('--experiment_name', type=str, default="cifar_uncond", help='The experiment name')
     parser.add_argument('--neptune', type=bool, default=False)
     parser.add_argument('--neptune_projects', type=str, default='azencot-group/koopman-dis')
-    parser.add_argument('--tags', type=list[str], default=['Adversarial', 'cond', 'Sanity Check new_main_7_4'])
+    parser.add_argument('--tags', type=list[str], default=['Adversarial', 'cond', 'new_main_7_4_with_all_new_method'])
 
     # --- artifacts --- #
     parser.add_argument('--output_prefix_path', type=str,
@@ -45,10 +45,16 @@ def load_arguments(parser) -> None:
 
     # --- koopman parameters --- #
     parser.add_argument('--noisy_latent', type=float, default=0.4)
+    parser.add_argument('--noisy_latent_after_push', type=float, default=0)
     parser.add_argument('--initial_noise_factor', type=float, default=80)
     parser.add_argument('--add_sampling_noise', type=float, default=0.4)
     parser.add_argument('--cond_type', type=str, default=CondType.KoopmanMatrixAddition)
     parser.add_argument('--label_dim', type=int, default=10)
+    parser.add_argument('--contrastive_estimation', type=float, default=0)
+    parser.add_argument('--contrast_x0_zT', type=float, default=0)
+    parser.add_argument('--contrast_x0_z0', type=float, default=0)
+    parser.add_argument('--contrast_xT_zT', type=float, default=0)
+
 
     # --- adversarial --- #
     parser.add_argument('--advers', type=bool, default=True)

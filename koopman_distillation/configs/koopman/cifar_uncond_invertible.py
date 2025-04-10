@@ -7,7 +7,7 @@ def load_arguments(parser) -> None:
     parser.add_argument('--neptune', type=bool, default=False)
     parser.add_argument('--neptune_projects', type=str, default='azencot-group/koopman-dis')
     parser.add_argument('--tags', type=list[str],
-                        default=['Adversarial', 'check uncond with cond code', 'Sanity Check new_main_7_4'])
+                        default=['Adversarial', 'check uncond with cond code', 'Sanity Check new_main_7_4', 'Invertible'])
 
     # --- artifacts --- #
     parser.add_argument('--output_prefix_path', type=str,

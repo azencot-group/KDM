@@ -5,10 +5,10 @@
 ### To ignore, just add another # - like so: ##SBATCH
 ################################################################################################
 
-#SBATCH --partition rtx_6000			### specify partition name where to run a job. main: all nodes; gtx1080: 1080 gpu card nodes; rtx2080: 2080 nodes; teslap100: p100 nodes; titanrtx: titan nodes
-##SBATCH --qos azencot
+#SBATCH --partition rtx6000			### specify partition name where to run a job. main: all nodes; gtx1080: 1080 gpu card nodes; rtx2080: 2080 nodes; teslap100: p100 nodes; titanrtx: titan nodes
+#SBATCH --qos azencot
 #SBATCH --gpus=rtx_6000:1			# 1 GPU
-#SBATCH --time 7-00:00:00			### limit the time of job running. Make sure it is not greater than the partition time limit!! Format: D-H:MM:SS
+#SBATCH --time 5-00:00:00			### limit the time of job running. Make sure it is not greater than the partition time limit!! Format: D-H:MM:SS
 #SBATCH --job-name train			### name of the job
 #SBATCH --output train-%J.out			### output log for running job - %J for job number
 
@@ -21,6 +21,19 @@ echo -e "SLURM_JOB_NODELIST:\t" $SLURM_JOB_NODELIST "\n\n"
 module load anaconda				### load anaconda module (must be present when working with conda environments)
 source activate edm				### activate a conda environment, replace my_env with your conda environment
 
-python main.py --config_name koopman/cifar_uncond --neptune True
+#python main.py --config_name koopman/cifar_uncond --neptune True
 #python main.py --config_name koopman/cifar_cond --neptune True --cond_type KoopmanMatrixAddition
 #python main.py --config_name koopman/cifar_cond --neptune True --cond_type OnlyEncDec
+#python main.py --config_name koopman/cifar_uncond --neptune True --contrastive_estimation 1
+#python main.py --config_name koopman/cifar_uncond --neptune True --contrastive_estimation 0.1
+#python main.py --config_name koopman/cifar_uncond --neptune True --noisy_latent_after_push 0.1
+#python main.py --config_name koopman/cifar_uncond --neptune True --noisy_latent_after_push 0.3
+#python main.py --config_name koopman/cifar_uncond --neptune True --contrast_x0_zT 1 --contrast_x0_z0 1 --contrast_xT_zT 1 --contrastive_estimation 1
+#python main.py --config_name koopman/cifar_uncond --neptune True --contrast_x0_zT 1 --contrast_x0_z0 0 --contrast_xT_zT 0 --contrastive_estimation 0
+#python main.py --config_name koopman/cifar_uncond --neptune True --contrast_x0_zT 0 --contrast_x0_z0 1 --contrast_xT_zT 0 --contrastive_estimation 0
+#python main.py --config_name koopman/cifar_uncond --neptune True --contrast_x0_zT 0 --contrast_x0_z0 0 --contrast_xT_zT 1 --contrastive_estimation 0
+#python main.py --config_name koopman/cifar_uncond --neptune True --contrast_x0_zT 1 --contrast_x0_z0 0 --contrast_xT_zT 0 --contrastive_estimation 1
+#python main.py --config_name koopman/cifar_uncond --neptune True --contrast_x0_zT 0 --contrast_x0_z0 1 --contrast_xT_zT 1 --contrastive_estimation 1
+#python main.py --config_name koopman/cifar_uncond --neptune True --contrast_x0_zT 0 --contrast_x0_z0 1 --contrast_xT_zT 1 --contrastive_estimation 0
+
+
