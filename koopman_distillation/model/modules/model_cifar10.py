@@ -1021,23 +1021,23 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
 
         if self.contrast_x0_zT > 0:
             self.contrast_layer_x0_zT = nn.Sequential(
-                nn.Linear(32 * 32 * in_channels, 256),
+                nn.Linear(32 * 32 * out_channels, 128),
                 nn.ReLU(),
-                nn.Linear(256, 32 * 32 * out_channels)
+                nn.Linear(128, 32 * 32 * in_channels),
             )
 
         if self.contrast_x0_z0 > 0:
             self.contrast_layer_x0_z0 = nn.Sequential(
-                nn.Linear(32 * 32 * in_channels, 256),
+                nn.Linear(32 * 32 * out_channels, 128),
                 nn.ReLU(),
-                nn.Linear(256, 32 * 32 * out_channels)
+                nn.Linear(128, 32 * 32 * in_channels),
             )
 
         if self.contrast_xT_zT > 0:
             self.contrast_layer_xT_zT = nn.Sequential(
-                nn.Linear(32 * 32 * in_channels, 256),
+                nn.Linear(32 * 32 * out_channels, 256),
                 nn.ReLU(),
-                nn.Linear(256, 32 * 32 * out_channels)
+                nn.Linear(128, 32 * 32 * in_channels),
             )
 
     def forward(self, x_0, x_T, labels=None):
@@ -1123,25 +1123,24 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
             loss += contrastive_loss_value
 
         if self.contrast_x0_zT > 0:
-            h_x0 = self.contrast_layer_x0_zT(loss_comps['x_0'].reshape(loss_comps['x_0'].shape[0], -1))
-            contrast_x0_zT = contrastive_loss(h_x0, loss_comps['z_T'].reshape(loss_comps['z_T'].shape[0],
-                                                                              -1)) * self.contrastive_estimation
+            h_x0 = self.contrast_layer_x0_zT(loss_comps['z_T'].reshape(loss_comps['z_T'].shape[0], -1))
+            contrast_x0_zT = -torch.cosine_similarity(h_x0,
+                                                      loss_comps['x_0'].reshape(loss_comps['x_0'].shape[0], -1)).mean()
             losses.update({'contrast_x0_zT': contrast_x0_zT})
-            loss += contrast_x0_zT
+            loss += contrast_x0_zT * self.contrast_x0_zT
 
         if self.contrast_x0_z0 > 0:
-            h_x0 = self.contrast_layer_x0_z0(loss_comps['x_0'].reshape(loss_comps['x_0'].shape[0], -1))
-            contrast_x0_z0 = contrastive_loss(h_x0, loss_comps['z_0'].reshape(loss_comps['z_0'].shape[0],
-                                                                              -1)) * self.contrastive_estimation
+            h_x0 = self.contrast_layer_x0_z0(loss_comps['z_0'].reshape(loss_comps['z_0'].shape[0], -1))
+            contrast_x0_z0 = -torch.cosine_similarity(h_x0,
+                                                      loss_comps['x_0'].reshape(loss_comps['x_0'].shape[0], -1)).mean()
             losses.update({'contrast_x0_z0': contrast_x0_z0})
-            loss += contrast_x0_z0
+            loss += contrast_x0_z0 * self.contrast_x0_z0
 
         if self.contrast_xT_zT > 0:
-            h_x0 = self.contrast_layer_xT_zT(loss_comps['x_T'].reshape(loss_comps['x_0'].shape[0], -1))
-            contrast_xT_zT = contrastive_loss(h_x0, loss_comps['z_T'].reshape(loss_comps['z_T'].shape[0],
-                                                                              -1)) * self.contrastive_estimation
+            h_x0 = self.contrast_layer_xT_zT(loss_comps['z_T'].reshape(loss_comps['z_0'].shape[0], -1))
+            contrast_xT_zT = -torch.cosine_similarity(h_x0, loss_comps['x_T'].reshape(loss_comps['x_T'].shape[0], -1))
             losses.update({'contrast_xT_zT': contrast_xT_zT})
-            loss += contrast_xT_zT
+            loss += contrast_xT_zT * self.contrast_xT_zT
 
         losses.update({'loss': loss})
 

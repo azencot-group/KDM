@@ -7,7 +7,7 @@ def load_arguments(parser) -> None:
     parser.add_argument('--neptune', type=bool, default=False)
     parser.add_argument('--neptune_projects', type=str, default='azencot-group/koopman-dis')
     parser.add_argument('--tags', type=list[str],
-                        default=['contrastive estimations opposite'])
+                        default=['contrastive estimations opposite' , 'cosine instead clip'])
 
     # --- artifacts --- #
     parser.add_argument('--output_prefix_path', type=str,

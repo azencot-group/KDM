@@ -17,7 +17,7 @@ class TrainLoop:
                  iterations=400001, lr=0.0003, print_every=50, data_shape=(2), teach_model=False, advers=False,
                  cond=False):
         self.model = model
-        self.ema = copy.deepcopy(model).eval().requires_grad_(False)
+        # self.ema = copy.deepcopy(model).eval().requires_grad_(False)
         self.train_data = iter(train_data)
         self.test_data = test_data
         self.device = device
@@ -29,7 +29,7 @@ class TrainLoop:
         self.logger = logger
         self.TModel_exists = teach_model
         self.optimizer = torch.optim.Adam(params=model.parameters(), lr=lr, betas=(0.9, 0.999), eps=1e-8)
-        self.best_fid_ema = float('inf')
+        # self.best_fid_ema = float('inf')
         self.best_fid_model = float('inf')
 
         seed = 42
@@ -74,7 +74,7 @@ class TrainLoop:
             losses['loss'].backward()  # backward
             self._nan_to_num(self.model)
             self.optimizer.step()  # update
-            self._update_ema(self.model, self.ema)
+            # self._update_ema(self.model, self.ema)
 
             if self.advers:
                 losses.update(advers_loss)
@@ -99,16 +99,16 @@ class TrainLoop:
 
         # evaluate fid for cifar10
         if iteration % (self.print_every * 100) == 0 and self.data_shape[0] == 3:
-            fid_ema = sample_and_calculate_fid(model=self.ema,
-                                               data_shape=self.data_shape,
-                                               num_samples=50000,
-                                               device=self.device,
-                                               batch_size=self.batch_size,
-                                               epoch=iteration,
-                                               image_dir=self.output_dir,
-                                               cond=self.cond,
-                                               )
-            self.logger.log('ema_fid', fid_ema, iteration)
+            # fid_ema = sample_and_calculate_fid(model=self.ema,
+            #                                    data_shape=self.data_shape,
+            #                                    num_samples=50000,
+            #                                    device=self.device,
+            #                                    batch_size=self.batch_size,
+            #                                    epoch=iteration,
+            #                                    image_dir=self.output_dir,
+            #                                    cond=self.cond,
+            #                                    )
+            # self.logger.log('ema_fid', fid_ema, iteration)
             fid_model = sample_and_calculate_fid(model=self.model,
                                                  data_shape=self.data_shape,
                                                  num_samples=50000,
@@ -124,9 +124,9 @@ class TrainLoop:
             plot_samples(self.logger, self.ema, self.batch_size, self.device, self.data_shape, self.output_dir,
                          self.cond)
 
-            if fid_ema < self.best_fid_ema:
-                torch.save(self.model, f'{self.output_dir}/ema_model.pt')
-                self.best_fid_ema = fid_ema
+            # if fid_ema < self.best_fid_ema:
+            #     torch.save(self.model, f'{self.output_dir}/ema_model.pt')
+            #     self.best_fid_ema = fid_ema
 
             if fid_model < self.best_fid_model:
                 torch.save(self.model, f'{self.output_dir}/model.pt')
