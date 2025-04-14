@@ -7,7 +7,7 @@ def load_arguments(parser) -> None:
     parser.add_argument('--neptune', type=bool, default=False)
     parser.add_argument('--neptune_projects', type=str, default='azencot-group/koopman-dis')
     parser.add_argument('--tags', type=list[str],
-                        default=['contrastive estimations opposite' , 'cosine instead clip'])
+                        default=['contrastive'])
 
     # --- artifacts --- #
     parser.add_argument('--output_prefix_path', type=str,
@@ -57,3 +57,6 @@ def load_arguments(parser) -> None:
 
     # --- adversarial --- #
     parser.add_argument('--advers', type=bool, default=True)
+
+    # --- gnn --- #
+    parser.add_argument('--gnn_regularization', type=float, default=0)

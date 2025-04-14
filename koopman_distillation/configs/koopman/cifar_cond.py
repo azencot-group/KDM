@@ -58,3 +58,6 @@ def load_arguments(parser) -> None:
 
     # --- adversarial --- #
     parser.add_argument('--advers', type=bool, default=True)
+
+    # --- gnn --- #
+    parser.add_argument('--gnn_regularization', type=float, default=0)

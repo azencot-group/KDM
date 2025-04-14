@@ -939,6 +939,7 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
                  contrast_x0_zT=0,
                  contrast_x0_z0=0,
                  contrast_xT_zT=0,
+                 gnn_regularization=0,
                  ):
         super().__init__()
 
@@ -955,6 +956,7 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
         self.contrast_x0_zT = contrast_x0_zT
         self.contrast_x0_z0 = contrast_x0_z0
         self.contrast_xT_zT = contrast_xT_zT
+        self.gnn_regularization = gnn_regularization
 
         self.lpips = LPIPS(replace_pooling=True, reduction="none")
 
@@ -1012,6 +1014,10 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
                                                 decoder_type=decoder_type,
                                                 resample_filter=resample_filter)
 
+        if self.gnn_regularization > 0:
+            self.gnn_net_reg = torch.nn.MultiheadAttention(embed_dim=32 * 32 * out_channels, num_heads=4,
+                                                           batch_first=False)
+
         self.koopman_operator = torch.nn.Linear(32 * 32 * out_channels, 32 * 32 * out_channels)
         self.psudo_huber_c = psudo_huber_c
 
@@ -1035,7 +1041,7 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
 
         if self.contrast_xT_zT > 0:
             self.contrast_layer_xT_zT = nn.Sequential(
-                nn.Linear(32 * 32 * out_channels, 256),
+                nn.Linear(32 * 32 * out_channels, 128),
                 nn.ReLU(),
                 nn.Linear(128, 32 * 32 * in_channels),
             )
@@ -1046,6 +1052,12 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
 
         z_0 = self.x_0_observables_encoder(x_0, t, labels)
         z_T = self.x_T_observables_encoder(x_T, T, labels)
+
+        if self.gnn_regularization > 0:
+            h_T = z_T.reshape(z_T.shape[0], z_T.shape[1], -1)
+            h_0 = z_0.reshape(z_0.shape[0], z_0.shape[1], -1)
+            z_T = self.gnn_net_reg(h_T, h_T, h_T)[0].reshape(z_T.shape)
+            z_0 = self.gnn_net_reg(h_0, h_0, h_0)[0].reshape(z_T.shape)
 
         z_0_noisy = z_0 + torch.randn_like(z_0) * self.noisy_latent
         z_T_noisy = z_T + torch.randn_like(z_T) * self.noisy_latent
@@ -1124,21 +1136,22 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
 
         if self.contrast_x0_zT > 0:
             h_x0 = self.contrast_layer_x0_zT(loss_comps['z_T'].reshape(loss_comps['z_T'].shape[0], -1))
-            contrast_x0_zT = -torch.cosine_similarity(h_x0,
-                                                      loss_comps['x_0'].reshape(loss_comps['x_0'].shape[0], -1)).mean()
+            contrast_x0_zT = contrastive_loss(h_x0,
+                                              loss_comps['x_0'].reshape(loss_comps['x_0'].shape[0], -1))
             losses.update({'contrast_x0_zT': contrast_x0_zT})
             loss += contrast_x0_zT * self.contrast_x0_zT
 
         if self.contrast_x0_z0 > 0:
             h_x0 = self.contrast_layer_x0_z0(loss_comps['z_0'].reshape(loss_comps['z_0'].shape[0], -1))
-            contrast_x0_z0 = -torch.cosine_similarity(h_x0,
-                                                      loss_comps['x_0'].reshape(loss_comps['x_0'].shape[0], -1)).mean()
+            contrast_x0_z0 = contrastive_loss(h_x0,
+                                              loss_comps['x_0'].reshape(loss_comps['x_0'].shape[0], -1))
             losses.update({'contrast_x0_z0': contrast_x0_z0})
             loss += contrast_x0_z0 * self.contrast_x0_z0
 
         if self.contrast_xT_zT > 0:
             h_x0 = self.contrast_layer_xT_zT(loss_comps['z_T'].reshape(loss_comps['z_0'].shape[0], -1))
-            contrast_xT_zT = -torch.cosine_similarity(h_x0, loss_comps['x_T'].reshape(loss_comps['x_T'].shape[0], -1))
+            contrast_xT_zT = contrastive_loss(h_x0,
+                                              loss_comps['x_T'].reshape(loss_comps['x_T'].shape[0], -1))
             losses.update({'contrast_xT_zT': contrast_xT_zT})
             loss += contrast_xT_zT * self.contrast_xT_zT
 
@@ -1154,6 +1167,10 @@ class AdversarialOneStepKoopmanCifar10(torch.nn.Module):
         t = torch.zeros((x_T.shape[0],)).to(x_T.device)
 
         z_T = self.x_T_observables_encoder(x_T, T, labels)
+
+        if self.gnn_regularization > 0:
+            h_T = z_T.reshape(z_T.shape[0], z_T.shape[1], -1)
+            z_T = self.gnn_net_reg(h_T, h_T, h_T)[0].reshape(z_T.shape)
 
         if self.add_sampling_noise > 0:
             z_T = z_T + torch.randn_like(z_T) * sample_noise_z_T

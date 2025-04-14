@@ -6,17 +6,19 @@ from koopman_distillation.utils.names import Datasets
 from old.distillation.utils.display import plot_spectrum
 
 cifar10_cls = torch.hub.load("chenyaofo/pytorch-cifar-models", "cifar10_resnet20", pretrained=True)
-bs = 1028
+bs = 1024
 
-train_data = load_data(
+train_data, test_data = load_data(
     dataset=Datasets.Cifar10_1M_Uncond,
     dataset_path='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond',
     batch_size=bs,
     num_workers=4,
+    dataset_path_test='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_test_data',
+
 )
 
 batch = next(iter(train_data))
-classes = torch.argmax(cifar10_cls(batch[0]), dim=1)
+classes = torch.argmax(cifar10_cls(batch[1]), dim=1)
 
 class_to_name = {
     0: 'Airplane',
@@ -40,23 +42,26 @@ class_to_name = {
 #     plt.show()
 
 model = torch.load(
-    '/home/bermann/functional_mapping/koopman_distillation/results/cifar_uncond/2025_03_05_00_21_41/model_300.pt')
-args = torch.load('/home/bermann/functional_mapping/koopman_distillation/results/cifar_uncond/2025_03_05_00_21_41/args.pth')
+    # '/home/bermann/functional_mapping/koopman_distillation/results/cifar_uncond/2025_04_08_17_50_26/model.pt') # sota
+    '/home/bermann/functional_mapping/koopman_distillation/results/cifar_uncond/2025_04_08_22_31_21/model.pt')  # sota
+args = torch.load(
+    # '/home/bermann/functional_mapping/koopman_distillation/results/cifar_uncond/2025_04_08_17_50_26/args.pth') # sote
+    '/home/bermann/functional_mapping/koopman_distillation/results/cifar_uncond/2025_04_08_22_31_21/args.pth')
 print(args.__dict__)
 with torch.no_grad():
     model = model.cuda()
     model.eval()
-    z0 = model.x_0_observables_encoder(batch[0].cuda(), torch.zeros(batch[0].shape[0]).cuda(),
-                                       torch.zeros(batch[0].shape[0]).cuda())
-    zT = model.x_T_observables_encoder(batch[1].cuda(), torch.ones(batch[0].shape[0]).cuda(),
-                                       torch.ones(batch[0].shape[0]).cuda())
+    z0 = model.x_0_observables_encoder(batch[1].cuda(), torch.zeros(batch[0].shape[0]).cuda(),
+                                       torch.zeros_like(torch.nn.functional.one_hot(classes).cuda()))
+    zT = model.x_T_observables_encoder(batch[0].cuda(), torch.ones(batch[0].shape[0]).cuda(),
+                                       torch.zeros_like(torch.nn.functional.one_hot(classes).cuda()))
     x0_hat = model.x0_observables_decoder(z0, torch.ones(batch[0].shape[0]).cuda(),
-                                          torch.ones(batch[0].shape[0]).cuda())
+                                          torch.zeros_like(torch.nn.functional.one_hot(classes).cuda()))
 
 K = model.koopman_operator.weight.data.cpu().numpy()
 
 # --- visual reconstruction quality --- #
-img1 = (batch[0] * 127.5 + 128).clip(0, 255).to(torch.uint8).permute(0, 2, 3, 1).cpu().numpy()[0]
+img1 = (batch[1] * 127.5 + 128).clip(0, 255).to(torch.uint8).permute(0, 2, 3, 1).cpu().numpy()[0]
 img2 = (x0_hat * 127.5 + 128).clip(0, 255).to(torch.uint8).permute(0, 2, 3, 1).cpu().numpy()[0]
 plt.imshow(img1)
 plt.show()
@@ -68,18 +73,18 @@ plt.show()
 
 # # --- plot K --- #
 # plt.imshow(K, interpolation='none', cmap='bwr')
-plt.spy(K, precision=1e-2)
-plt.show()
-#
+# plt.spy(K, precision=1e-2)
+# plt.show()
+
 # # --- plot eigenvalues spectrum --- #
-plot_spectrum(K)
+# plot_spectrum(K)
 
 # --- plot a tsne plot the images on 2D with colors as labels ----
 from sklearn.manifold import TSNE
 
 # Reduce dimensions with t-SNE
 tsne = TSNE(n_components=2, random_state=42)
-x_tsne = tsne.fit_transform(batch[1].reshape(bs, -1))
+x_tsne = tsne.fit_transform(batch[0].reshape(bs, -1))
 
 # Plot the t-SNE results
 plt.figure(figsize=(8, 8))
@@ -99,7 +104,7 @@ plt.grid(True)
 plt.show()
 
 tsne = TSNE(n_components=2, random_state=42)
-x_tsne = tsne.fit_transform(batch[0].reshape(bs, -1))
+x_tsne = tsne.fit_transform(batch[1].reshape(bs, -1))
 
 # Plot the t-SNE results
 plt.figure(figsize=(8, 8))

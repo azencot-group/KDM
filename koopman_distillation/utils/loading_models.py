@@ -48,6 +48,7 @@ def create_koopman_model(args):
                                                 contrast_x0_zT=args.contrast_x0_zT,
                                                 contrast_x0_z0=args.contrast_x0_z0,
                                                 contrast_xT_zT=args.contrast_xT_zT,
+                                                gnn_regularization=args.gnn_regularization,
                                                 )
 
     else:

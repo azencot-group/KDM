@@ -121,7 +121,7 @@ class TrainLoop:
             self.logger.log('model_fid', fid_model, iteration)
             plot_spectrum(self.model.koopman_operator.weight.data.cpu().detach().numpy(), self.output_dir, self.logger)
             # plot qualitative results
-            plot_samples(self.logger, self.ema, self.batch_size, self.device, self.data_shape, self.output_dir,
+            plot_samples(self.logger, self.model, self.batch_size, self.device, self.data_shape, self.output_dir,
                          self.cond)
 
             # if fid_ema < self.best_fid_ema:
