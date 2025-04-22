@@ -6,6 +6,7 @@ import torch
 import tqdm
 
 import numpy as np
+from pytorch_image_generation_metrics import get_inception_score_and_fid
 
 from edm.dnnlib.util import open_url
 from koopman_distillation.data.data_loading.data_loaders import load_data_for_testing
@@ -95,6 +96,34 @@ def sample_and_calculate_fid(model, data_shape, num_samples, device, batch_size,
         ref_path='https://nvlabs-fi-cdn.nvidia.com/edm/fid-refs/cifar10-32x32.npz',
         image_path=output_dir,
         batch_size=batch_size)
+
+
+def sample_and_calculate_fid_and_is(model, data_shape, num_samples, device, batch_size, epoch, image_dir, cond=False):
+    i = 0
+    all_images = []
+    while True:
+        if cond:
+            labels = torch.eye(model.label_dim, device=device)[
+                torch.randint(model.label_dim, size=[batch_size], device=device)]
+        else:
+            labels = None
+        x0_sample = model.sample(batch_size, device, data_shape, labels=labels)
+        images = x0_sample[0].detach().cpu()
+        for img in images:
+            all_images.append((img * 127.5 + 128).clip(0, 255).to(torch.uint8).float().div(255).numpy())
+            i += 1
+            if i >= num_samples:
+                break
+        if i >= num_samples:
+            break
+
+    all_images = np.stack(all_images, axis=0)
+
+    # Compute FID & IS
+    (IS, IS_std), FID = get_inception_score_and_fid(torch.tensor(all_images),
+                                                    '/home/bermann/functional_mapping/koopman_distillation/results/cifar_uncond/2025_04_14_17_44_10/cifar10-32x32.npy')
+
+    return IS, FID
 
 
 def sample_and_calculate_fid_for_test(model, data_shape, num_samples, device, batch_size, epoch, image_dir,

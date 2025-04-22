@@ -5,7 +5,7 @@ import copy
 import numpy as np
 import torch
 
-from koopman_distillation.evaluation.fid import sample_and_calculate_fid
+from koopman_distillation.evaluation.fid import sample_and_calculate_fid, sample_and_calculate_fid_and_is
 from koopman_distillation.evaluation.wassertien_distance import measure_wess_distance
 from koopman_distillation.model.modules.model_cifar10 import Discriminator
 from koopman_distillation.utils.loggers.logging import plot_samples
@@ -96,7 +96,6 @@ class TrainLoop:
         for k, v in losses.items():
             self.logger.log(k, v.item(), iteration)
 
-
         # evaluate fid for cifar10
         if iteration % (self.print_every * 100) == 0 and self.data_shape[0] == 3:
             # fid_ema = sample_and_calculate_fid(model=self.ema,
@@ -109,16 +108,16 @@ class TrainLoop:
             #                                    cond=self.cond,
             #                                    )
             # self.logger.log('ema_fid', fid_ema, iteration)
-            fid_model = sample_and_calculate_fid(model=self.model,
-                                                 data_shape=self.data_shape,
-                                                 num_samples=50000,
-                                                 device=self.device,
-                                                 batch_size=self.batch_size,
-                                                 epoch=iteration,
-                                                 image_dir=self.output_dir,
-                                                 cond=self.cond,
-                                                 )
+            is_model, fid_model = sample_and_calculate_fid_and_is(model=self.model,
+                                                                  data_shape=self.data_shape,
+                                                                  num_samples=50_000,
+                                                                  device=self.device,
+                                                                  batch_size=self.batch_size,
+                                                                  epoch=iteration,
+                                                                  image_dir=self.output_dir,
+                                                                  cond=self.cond)
             self.logger.log('model_fid', fid_model, iteration)
+            self.logger.log('model_is', is_model, iteration)
             plot_spectrum(self.model.koopman_operator.weight.data.cpu().detach().numpy(), self.output_dir, self.logger)
             # plot qualitative results
             plot_samples(self.logger, self.model, self.batch_size, self.device, self.data_shape, self.output_dir,
