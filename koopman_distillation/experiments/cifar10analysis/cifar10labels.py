@@ -6,7 +6,6 @@ from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
 
 from koopman_distillation.data.data_loading.data_loaders import load_data
 from koopman_distillation.utils.names import Datasets
-from old.distillation.utils.display import plot_spectrum
 from sklearn.cluster import KMeans
 
 cifar10_cls = torch.hub.load("chenyaofo/pytorch-cifar-models", "cifar10_resnet20", pretrained=True)
@@ -36,14 +35,6 @@ class_to_name = {
     8: 'Ship',
     9: 'Truck'
 }
-
-# --- plot each photo and class name --- #
-# import matplotlib.pyplot as plt
-#
-# for img, cls in zip(batch[0], classes):
-#     plt.imshow(img.permute(1, 2, 0).detach().cpu())
-#     plt.title(class_to_name[int(cls.item())])
-#     plt.show()
 
 model = torch.load(
     '/home/bermann/functional_mapping/koopman_distillation/results/cifar_uncond/2025_04_08_17_50_26/model.pt')  # sota
@@ -92,40 +83,69 @@ print("Random clustering baseline:")
 print(f"  ARI: {adjusted_rand_score(true_labels, random_labels):.4f}")
 print(f"  NMI: {normalized_mutual_info_score(true_labels, random_labels):.4f}")
 
-# class_to_name = {
-#     0: 'Airplane',
-#     1: 'Automobile',
-#     2: 'Bird',
-#     3: 'Cat',
-#     4: 'Deer',
-#     5: 'Dog',
-#     6: 'Frog',
-#     7: 'Horse',
-#     8: 'Ship',
-#     9: 'Truck'
-# }
-#
-# K = model.koopman_operator.weight.data.cpu().numpy()
-#
-# # --- visual reconstruction quality --- #
-# img1 = (batch[1] * 127.5 + 128).clip(0, 255).to(torch.uint8).permute(0, 2, 3, 1).cpu().numpy()[0]
-# img2 = (x0_hat * 127.5 + 128).clip(0, 255).to(torch.uint8).permute(0, 2, 3, 1).cpu().numpy()[0]
-# plt.imshow(img1)
-# plt.show()
-# plt.imshow(img2)
-# plt.show()
-# plt.imshow(abs(img1 - img2))
-# plt.colorbar()
-# plt.show()
-#
-# # # --- plot K --- #
-# # plt.imshow(K, interpolation='none', cmap='bwr')
-# # plt.spy(K, precision=1e-2)
-# # plt.show()
-#
-# # # --- plot eigenvalues spectrum --- #
-# # plot_spectrum(K)
-#
+noise = torch.randn_like(batch[0]).view(data.size(0), -1).cpu().numpy()
+x0 = batch[1].view(data.size(0), -1).cpu().numpy()
+xT = batch[0].view(data.size(0), -1).cpu().numpy()
+zT = zT.view(data.size(0), -1).cpu().numpy()
+z0 = z0.view(data.size(0), -1).cpu().numpy()
+labels = true_labels
+
+xT_0 = xT[labels == 0]
+xT_1 = xT[labels == 1]
+xT_2 = xT[labels == 2]
+xT_3 = xT[labels == 3]
+xT_4 = xT[labels == 4]
+xT_5 = xT[labels == 5]
+xT_6 = xT[labels == 6]
+xT_7 = xT[labels == 7]
+xT_8 = xT[labels == 8]
+xT_9 = xT[labels == 9]
+
+# calculate the average, standard deviation and maximum of the distance between all points between two point groups
+from scipy.spatial.distance import cdist
+import pandas as pd
+groups = [xT_0, xT_1, xT_2, xT_3, xT_4, xT_5, xT_6, xT_7, xT_8, xT_9]
+# Initialize empty table
+mean_table = pd.DataFrame(index=list(class_to_name.values()), columns=list(class_to_name.values()))
+
+# Fill table
+for i in range(10):
+    for j in range(10):
+        distances = cdist(groups[i], groups[j])
+        mean_distance = np.max(distances)
+        mean_table.iloc[i, j] = f"{mean_distance:.3f}"
+# Print the whole table nicely
+print(mean_table.to_string())
+
+
+from sklearn.metrics import davies_bouldin_score
+score_x0 = davies_bouldin_score(x0, labels)
+print("DBI score x0: ", score_x0)
+score_z0 = davies_bouldin_score(z0, labels)
+print("DBI score z0: ", score_z0)
+
+score_xT = davies_bouldin_score(xT, labels)
+print("DBI score xT: ", score_xT)
+score_zT = davies_bouldin_score(zT, labels)
+print("DBI score zT: ", score_zT)
+
+score_noise = davies_bouldin_score(noise, labels)
+print("DBI score noise: ", score_noise)
+
+from sklearn.metrics import calinski_harabasz_score
+score_x0 = calinski_harabasz_score(x0, labels)
+print("Calinski score x0: ", score_x0)
+score_z0 = calinski_harabasz_score(z0, labels)
+print("Calinski score z0: ", score_z0)
+
+score_xT = calinski_harabasz_score(xT, labels)
+print("Calinski score xT: ", score_xT)
+score_zT = calinski_harabasz_score(zT, labels)
+print("Calinski score zT: ", score_zT)
+
+score_noise = calinski_harabasz_score(noise, labels)
+print("Calinski score noise: ", score_noise)
+
 # # --- plot a tsne plot the images on 2D with colors as labels ----
 from sklearn.manifold import TSNE
 

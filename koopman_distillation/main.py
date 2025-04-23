@@ -5,7 +5,6 @@ sys.path.append('.')
 sys.path.append('..')
 sys.path.append('../../')
 sys.path.append('../../../')
-
 from koopman_distillation.utils.names import CondType
 from koopman_distillation.utils.loggers import CompositeLogger, NeptuneLogger, PrintLogger
 from koopman_distillation.configs.config_router import get_configs
@@ -41,6 +40,7 @@ def main(args):
             dataset_path_test=args.datapath_test,
             batch_size=args.batch_size,
             num_workers=args.num_workers,
+            dataset_subset=args.dataset_subset,
         )
 
         logger.info("training...")
@@ -59,6 +59,7 @@ def main(args):
             ema_rate=args.ema_rate,
             advers=args.advers,
             cond=args.cond_type != CondType.Uncond,
+            advers_w=args.advers_w,
         ).train()
 
 

@@ -6,7 +6,7 @@ class Datasets:
 
 class DistillationModels:
     OneStepKOD = "Koopman Operator Distillation"
-    InverseOneStepKOD = "Inverse Koopman Operator Distillation"
+    FastOneStepKOD = "Koopman Operator Distillation Fast"
 
 
 # --- models configurations --- #
@@ -21,3 +21,10 @@ class CondType:
     Uncond = "Uncond"
     OnlyEncDec = "OnlyEncDec"
     KoopmanMatrixAddition = "KoopmanMatrixAddition"
+
+
+class EigenSpecKoopmanLossTypes:
+    NoLoss = "NoLoss"
+    Uniform = "Uniform"
+    GradualUniform = "GradualUniform"
+    OnTheCircle = "OnTheCircle"

@@ -15,9 +15,9 @@ from old.distillation.utils.display import plot_spectrum
 class TrainLoop:
     def __init__(self, model, train_data, test_data, batch_size, device, output_dir, logger, ema_rate,
                  iterations=400001, lr=0.0003, print_every=50, data_shape=(2), teach_model=False, advers=False,
-                 cond=False):
+                 cond=False, advers_w=1):
         self.model = model
-        # self.ema = copy.deepcopy(model).eval().requires_grad_(False)
+        self.ema = copy.deepcopy(model).eval().requires_grad_(False)
         self.train_data = iter(train_data)
         self.test_data = test_data
         self.device = device
@@ -29,7 +29,7 @@ class TrainLoop:
         self.logger = logger
         self.TModel_exists = teach_model
         self.optimizer = torch.optim.Adam(params=model.parameters(), lr=lr, betas=(0.9, 0.999), eps=1e-8)
-        # self.best_fid_ema = float('inf')
+        self.best_fid_ema = float('inf')
         self.best_fid_model = float('inf')
 
         seed = 42
@@ -40,7 +40,7 @@ class TrainLoop:
         self.advers = advers
         self.cond = cond
         if advers:
-            self.discriminator = Discriminator(in_channels=3).cuda()
+            self.discriminator = Discriminator(in_channels=3, advers_w=advers_w).cuda()
             self.optimizer_adv = torch.optim.Adam(params=self.discriminator.parameters(), lr=lr, betas=(0.9, 0.999),
                                                   eps=1e-8)
 
@@ -74,7 +74,7 @@ class TrainLoop:
             losses['loss'].backward()  # backward
             self._nan_to_num(self.model)
             self.optimizer.step()  # update
-            # self._update_ema(self.model, self.ema)
+            self._update_ema(self.model, self.ema)
 
             if self.advers:
                 losses.update(advers_loss)
@@ -98,16 +98,14 @@ class TrainLoop:
 
         # evaluate fid for cifar10
         if iteration % (self.print_every * 100) == 0 and self.data_shape[0] == 3:
-            # fid_ema = sample_and_calculate_fid(model=self.ema,
-            #                                    data_shape=self.data_shape,
-            #                                    num_samples=50000,
-            #                                    device=self.device,
-            #                                    batch_size=self.batch_size,
-            #                                    epoch=iteration,
-            #                                    image_dir=self.output_dir,
-            #                                    cond=self.cond,
-            #                                    )
-            # self.logger.log('ema_fid', fid_ema, iteration)
+            ema_is_model, ema_fid_model = sample_and_calculate_fid_and_is(model=self.ema,
+                                                                  data_shape=self.data_shape,
+                                                                  num_samples=50_000,
+                                                                  device=self.device,
+                                                                  batch_size=self.batch_size,
+                                                                  epoch=iteration,
+                                                                  image_dir=self.output_dir,
+                                                                  cond=self.cond)
             is_model, fid_model = sample_and_calculate_fid_and_is(model=self.model,
                                                                   data_shape=self.data_shape,
                                                                   num_samples=50_000,
@@ -116,20 +114,27 @@ class TrainLoop:
                                                                   epoch=iteration,
                                                                   image_dir=self.output_dir,
                                                                   cond=self.cond)
+
+            self.logger.log('ema_model_fid', ema_fid_model, iteration)
+            self.logger.log('ema_model_is', ema_is_model, iteration)
             self.logger.log('model_fid', fid_model, iteration)
             self.logger.log('model_is', is_model, iteration)
-            plot_spectrum(self.model.koopman_operator.weight.data.cpu().detach().numpy(), self.output_dir, self.logger)
+
+            plot_spectrum(self.model.koopman_operator, self.output_dir, self.logger)
             # plot qualitative results
             plot_samples(self.logger, self.model, self.batch_size, self.device, self.data_shape, self.output_dir,
                          self.cond)
 
-            # if fid_ema < self.best_fid_ema:
-            #     torch.save(self.model, f'{self.output_dir}/ema_model.pt')
-            #     self.best_fid_ema = fid_ema
+            if ema_fid_model < self.best_fid_ema:
+                torch.save(self.model, f'{self.output_dir}/ema_model.pt')
+                self.best_fid_ema = ema_fid_model
 
             if fid_model < self.best_fid_model:
                 torch.save(self.model, f'{self.output_dir}/model.pt')
                 self.best_fid_model = fid_model
+
+            torch.save(self.model, f'{self.output_dir}/last_model.pt')
+            torch.save(self.ema, f'{self.output_dir}/last_ema_model.pt')
             # save the model
 
         # checkerboard evaluation

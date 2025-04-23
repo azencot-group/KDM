@@ -53,7 +53,8 @@ class InfiniteBatchSampler(Sampler):
         return self.iters_per_ep
 
 
-def load_data(dataset: Datasets, dataset_path: str, dataset_path_test: str, batch_size: int, num_workers: int):
+def load_data(dataset: Datasets, dataset_path: str, dataset_path_test: str, batch_size: int, num_workers: int,
+              dataset_subset: str = 'no_subset'):
     if dataset == Datasets.Checkerboard:
         return torch.utils.data.DataLoader(CheckerboardDataset(dataset_path),
                                            num_workers=num_workers,
@@ -63,13 +64,13 @@ def load_data(dataset: Datasets, dataset_path: str, dataset_path_test: str, batc
 
 
     elif dataset == Datasets.Cifar10_1M_Uncond:
-        train_set = Cifar10Dataset(dataset_path)
+        train_set = Cifar10Dataset(dataset_path, dataset_subset)
         train_data = torch.utils.data.DataLoader(dataset=train_set,
                                                  pin_memory=True,
                                                  batch_sampler=InfiniteBatchSampler(dataset_len=len(train_set),
                                                                                     batch_size=batch_size),
                                                  num_workers=num_workers)
-        test_data = torch.utils.data.DataLoader(Cifar10Dataset(dataset_path_test),
+        test_data = torch.utils.data.DataLoader(Cifar10Dataset(dataset_path_test, dataset_subset),
                                                 num_workers=num_workers,
                                                 batch_size=batch_size,
                                                 shuffle=False,

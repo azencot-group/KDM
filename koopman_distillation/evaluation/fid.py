@@ -121,7 +121,7 @@ def sample_and_calculate_fid_and_is(model, data_shape, num_samples, device, batc
 
     # Compute FID & IS
     (IS, IS_std), FID = get_inception_score_and_fid(torch.tensor(all_images),
-                                                    '/home/bermann/functional_mapping/koopman_distillation/results/cifar_uncond/2025_04_14_17_44_10/cifar10-32x32.npy')
+                                                    '/cs/cs_groups/azencot_group/functional_diffusion/cifar10-32x32.npy')
 
     return IS, FID
 

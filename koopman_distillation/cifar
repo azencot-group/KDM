@@ -8,9 +8,10 @@
 #SBATCH --partition rtx6000			### specify partition name where to run a job. main: all nodes; gtx1080: 1080 gpu card nodes; rtx2080: 2080 nodes; teslap100: p100 nodes; titanrtx: titan nodes
 ##SBATCH --qos azencot
 #SBATCH --gpus=rtx_6000:1			# 1 GPU
-#SBATCH --time 0-14:00:00			### limit the time of job running. Make sure it is not greater than the partition time limit!! Format: D-H:MM:SS
+#SBATCH --time 7-00:00:00			### limit the time of job running. Make sure it is not greater than the partition time limit!! Format: D-H:MM:SS
 #SBATCH --job-name train			### name of the job
 #SBATCH --output train-%J.out			### output log for running job - %J for job number
+##SBATCH --exclude=cs-6000-04,ise-cpu256-06,cs-cpu256-01,ise-cpu256-16,ise-cpu256-15,ise-cpu256-22,ise-cpu256-14,ise-cpu256-13,ise-cpu256-12,ise-cpu256-11,ise-cpu256-10,ise-cpu256-09,ise-cpu256-08,ise-cpu256-07,ise-cpu256-05,ise-cpu256-04,ise-cpu256-03,ise-cpu256-02,ise-cpu256-01,ise-cpu256-21,ise-cpu256-18,ise-cpu256-20,ise-cpu256-19,ise-cpu256-17,ise-cpu256-23,ise-cpu256-24,ise-cpu256-25,ise-cpu256-26,ise-cpu256-27,ise-cpu256-28,ise-cpu256-29,ise-cpu256-30,ise-cpu256-31,ise-cpu256-32
 
 ### Print some data to output file ###
 echo `date`
@@ -19,21 +20,29 @@ echo -e "SLURM_JOB_NODELIST:\t" $SLURM_JOB_NODELIST "\n\n"
 
 ### Start your src_code below ####
 module load anaconda				### load anaconda module (must be present when working with conda environments)
-source activate /home/bermann/.conda/envs/edm/				### activate a conda environment, replace my_env with your conda environment
+#source activate /home/bermann/.conda/envs/edm/				### activate a conda environment, replace my_env with your conda environment
+source activate /home/naimani/.conda/envs/edm				### activate a conda environment, replace my_env with your conda environment
 
-#python main.py --config_name koopman/cifar_uncond --neptune True --gnn_regularization 0.1
-#python main.py --config_name koopman/cifar_cond --neptune True --cond_type KoopmanMatrixAddition
-#python main.py --config_name koopman/cifar_cond --neptune True --cond_type OnlyEncDec
-#python main.py --config_name koopman/cifar_uncond --neptune True --contrastive_estimation 1
-#python main.py --config_name koopman/cifar_uncond --neptune True --contrastive_estimation 0.1
-#python main.py --config_name koopman/cifar_uncond --neptune True --noisy_latent_after_push 0.1
-#python main.py --config_name koopman/cifar_uncond --neptune True --noisy_latent_after_push 0.3
-#python main.py --config_name koopman/cifar_uncond --neptune True --contrast_x0_zT 1 --contrast_x0_z0 1 --contrast_xT_zT 1 --contrastive_estimation 1
-#python main.py --config_name koopman/cifar_uncond --neptune True --contrast_x0_zT 1 --contrast_x0_z0 0 --contrast_xT_zT 0 --contrastive_estimation 0
-#python main.py --config_name koopman/cifar_uncond --neptune True --contrast_x0_zT 0 --contrast_x0_z0 1 --contrast_xT_zT 0 --contrastive_estimation 0
-#python main.py --config_name koopman/cifar_uncond --neptune True --contrast_x0_zT 0 --contrast_x0_z0 0 --contrast_xT_zT 1 --contrastive_estimation 0
-#python main.py --config_name koopman/cifar_uncond --neptune True --contrast_x0_zT 1 --contrast_x0_z0 0 --contrast_xT_zT 0 --contrastive_estimation 1
-#python main.py --config_name koopman/cifar_uncond --neptune True --contrast_x0_zT 0 --contrast_x0_z0 1 --contrast_xT_zT 1 --contrastive_estimation 1
-python main.py --config_name koopman/cifar_uncond --neptune True
+# latent space scaling
+#python main.py --config_name koopman/cifar_uncond --neptune True --out_channels 3 --tags cifar_higher_space
+#python main.py --config_name koopman/cifar_uncond --neptune True --out_channels 6 --tags cifar_higher_space
 
+# data amount scaling
+#python main.py --config_name koopman/cifar_uncond --neptune True --dataset_subset 50k --tags dataset_scale
+#python main.py --config_name koopman/cifar_uncond --neptune True --dataset_subset 250k --tags dataset_scale
+#python main.py --config_name koopman/cifar_uncond --neptune True --dataset_subset 500k --tags dataset_scale
 
+# parameters scaling down
+#python main.py --config_name koopman/cifar_uncond --neptune True --channel_mult 1 2 2 2 --model_channels 20 --tags parameters_scale # 20m
+#python main.py --config_name koopman/cifar_uncond --neptune True --channel_mult 1 2 2 4 --model_channels 32 --tags parameters_scale # 38m
+#python main.py --config_name koopman/cifar_uncond --neptune True --channel_mult 1 1 3 3 --model_channels 64 --tags parameters_scale # 84m
+
+#python main.py --config_name koopman/cifar_uncond --neptune True --advers_w 0 --w_latent 1 --w_rec 0 --w_push 0 --tags loss_abl
+#python main.py --config_name koopman/cifar_uncond --neptune True --advers_w 0 --w_latent 0 --w_rec 1 --w_push 0 --tags loss_abl
+#python main.py --config_name koopman/cifar_uncond --neptune True --advers_w 0 --w_latent 0 --w_rec 0 --w_push 1 --tags loss_abl
+#python main.py --config_name koopman/cifar_uncond --neptune True --advers_w 0 --w_latent 0 --w_rec 1 --w_push 1 --tags loss_abl
+#python main.py --config_name koopman/cifar_uncond --neptune True --advers_w 0 --w_latent 1 --w_rec 1 --w_push 0 --tags loss_abl
+#python main.py --config_name koopman/cifar_uncond --neptune True --advers_w 0 --w_latent 1 --w_rec 0 --w_push 1 --tags loss_abl
+
+#python main.py --config_name koopman/cifar_uncond_fast --neptune True --tags spectrum_abl --batch_size 128 --koopman_loss_type Uniform
+python main.py --config_name koopman/cifar_uncond_fast --neptune True --tags spectrum_abl --batch_size 128 --koopman_loss_type GradualUniform

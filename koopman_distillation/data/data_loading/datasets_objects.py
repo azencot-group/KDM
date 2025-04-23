@@ -20,9 +20,17 @@ class CheckerboardDataset(torch.utils.data.Dataset):
 
 
 class Cifar10Dataset(torch.utils.data.Dataset):
-    def __init__(self, path):
+    def __init__(self, path, dataset_subset):
+        cut = 1_000_000
+        if dataset_subset == '50k':
+            cut = 50_000
+        elif dataset_subset == '250k':
+            cut = 250_000
+        elif dataset_subset == '500k':
+            cut = 500_000
+
         # parse all the paths in path
-        self.paths = glob.glob(path + '/*')
+        self.paths = glob.glob(path + '/*')[:cut]
 
     def __len__(self):
         return len(self.paths)
@@ -32,7 +40,7 @@ class Cifar10Dataset(torch.utils.data.Dataset):
         x0: Tensor = torch.tensor(dynamics[-1]).float()
         xT: Tensor = torch.tensor(dynamics[0]).float()
 
-        return x0, xT, np.nan # dummy label
+        return x0, xT, np.nan  # dummy label
 
 
 class Cifar10DatasetCond(torch.utils.data.Dataset):

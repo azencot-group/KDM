@@ -2,12 +2,21 @@ import numpy as np
 import torch
 from matplotlib import pyplot as plt
 
+from koopman_distillation.model.modules.model_cifar10 import FastKoopmanMatrix
+
 
 def plot_spectrum(C, output_dir, logger):
-    if C.dtype in [torch.float32, torch.float64]:
-        C = C.detach().cpu().numpy()
 
-    D = np.linalg.eigvals(C)
+    if isinstance(C, FastKoopmanMatrix):
+        lambda_mod = torch.exp(-torch.exp(C.nu_log))
+        lambda_re = lambda_mod * torch.cos(torch.exp(C.theta_log))
+        lambda_im = lambda_mod * torch.sin(torch.exp(C.theta_log))
+        D = torch.complex(lambda_re, lambda_im).cpu().detach().numpy()
+    else:
+        C = C.weight.data.cpu().detach().numpy()
+        D = np.linalg.eigvals(C)
+        if C.dtype in [torch.float32, torch.float64]:
+            C = C.detach().cpu().numpy()
 
     plt.close('all')
     fig = plt.figure()

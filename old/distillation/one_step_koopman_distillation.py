@@ -18,7 +18,7 @@ else:
 torch.manual_seed(42)
 
 # ------- data -------
-data = np.load('sol.npy')
+data = np.load('/home/bermann/functional_mapping/distillation/sol.npy')
 
 # training arguments
 lr = 0.0003
@@ -27,7 +27,7 @@ iterations = 2301
 print_every = 50
 time_steps = 10
 hidden_dim = 256
-noisy_latent = 0.4
+noisy_latent = 0
 rec_xT_loss = False
 # push_list = ['all_linear', 'sample_linear', 'batch_linear']
 push = 'all_linear'
@@ -77,7 +77,7 @@ for i in range(iterations):
         start_time = time.time()
 
 # save model with date and time
-# torch.save(km.state_dict(), f'koopman_model_v0.pt')
+torch.save(km.state_dict(), f'koopman_model_v0_no_noise.pt')
 
 x0_sample = km.sample(50000, device)
 x0_sample = x0_sample[0].detach().cpu().numpy()
