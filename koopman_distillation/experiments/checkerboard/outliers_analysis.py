@@ -79,6 +79,9 @@ hidden_dim = 256
 noisy_latent = 0.4
 rec_xT_loss = False
 push = 'all_linear'
+
+
+# todo - train a models instead of loading one
 km = OneStepKoopmanModel(hidden_dim=hidden_dim,
                          time_steps=time_steps,
                          noisy_latent=noisy_latent,

@@ -18,23 +18,6 @@ def wess_distance(A, B):
     return (dist_x + dist_y) / 2
 
 
-# # --- one time run and now no need to use --- #
-# # save comparison data
-# original_data = inf_train_gen(batch_size=50000, device='cpu')
-# # make directory
-# import os
-#
-# os.makedirs('/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/checkerboard/',
-#             exist_ok=True)
-# torch.save(original_data,
-#            '/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/checkerboard/original_data.pt')
-#
-# # calculate reference distance
-# fm_samplings = torch.tensor(np.load('../sol.npy'))[-1]
-# fm_distance = wess_distance(fm_samplings, original_data)
-# print(f'Flow Matching distance: {fm_distance:.6f}')
-
-
 def measure_wess_distance(model, device, train_loader, num_samples=40000):
     # load num_samples from the train_loader
     final_samples = []
@@ -46,7 +29,6 @@ def measure_wess_distance(model, device, train_loader, num_samples=40000):
 
     samples = torch.cat(final_samples, dim=0)
 
-    original_data = torch.load(
-        '/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/checkerboard/original_data.pt')
+    original_data = inf_train_gen(num_samples, device=device)
 
     return wess_distance(samples[:num_samples].cpu().detach(), original_data[:num_samples])

@@ -24,7 +24,7 @@ def main(args):
         logger.info(f"working directory: {workdir}")
 
         # --- create models --- #
-        logger.info("creating observables encoder model...")  # create the main multimodal diffusion bridge framework
+        logger.info("creating observables encoder models...")  # create the main multimodal diffusion bridge framework
         dsm = create_distillation_model(args.distillation_model, args)
         dsm = dsm.cuda()
         print_model_params(logger, dsm)

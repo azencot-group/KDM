@@ -1,10 +1,10 @@
 import numpy as np
 from torch.utils.data import Sampler
+import torch
 
 from koopman_distillation.data.data_loading.datasets_objects import CheckerboardDataset, Cifar10Dataset, \
-    FIDCifar10Dataset, Cifar10DatasetCond
+    Cifar10DatasetCond
 from koopman_distillation.utils.names import Datasets
-import torch
 
 
 class InfiniteBatchSampler(Sampler):
@@ -93,7 +93,3 @@ def load_data(dataset: Datasets, dataset_path: str, dataset_path_test: str, batc
 
     else:
         raise NotImplementedError(f"Dataset {dataset} not implemented")
-
-
-def load_data_for_testing(path):
-    return FIDCifar10Dataset(path)

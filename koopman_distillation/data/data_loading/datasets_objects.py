@@ -60,20 +60,3 @@ class Cifar10DatasetCond(torch.utils.data.Dataset):
         label = data['label']
 
         return x0, xT, label
-
-
-class FIDCifar10Dataset(torch.utils.data.Dataset):
-    def __init__(self, path):
-        # parse all the paths in path
-        self.paths = glob.glob(path + '/*')
-
-    def __len__(self):
-        return len(self.paths)
-
-    def __getitem__(self, ix):
-        dynamics = np.load(self.paths[ix])['arr_0']
-        if len(dynamics.shape) == 4:
-            x0: Tensor = torch.tensor(dynamics[0]).float()
-        else:
-            x0: Tensor = torch.tensor(dynamics).float()
-        return x0

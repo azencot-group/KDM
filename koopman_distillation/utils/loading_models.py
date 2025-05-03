@@ -1,8 +1,7 @@
 import torch.nn
 
-from koopman_distillation.model.koopman_distillator import KoopmanDistillOneStep
-from koopman_distillation.model.modules.model_checkerboard import Encoder, Decoder
-from koopman_distillation.model.modules.model_cifar10 import AdversarialOneStepKoopmanCifar10, \
+from koopman_distillation.models.koopman_model_checkerboard import Encoder, Decoder, KoopmanDistillOneStep
+from koopman_distillation.models.koopman_model_cifar10 import AdversarialOneStepKoopmanCifar10, \
     AdversarialOneStepKoopmanCifar10Fast
 from koopman_distillation.utils.names import DistillationModels, Datasets
 
@@ -20,7 +19,7 @@ def loading_pre_trained_weights(model):
 
 def create_koopman_model(args):
     if args.dataset == Datasets.Checkerboard:
-        # todo - implement adversarial option to the loss of this model
+        # todo - implement adversarial option to the loss of this models
         return KoopmanDistillOneStep(
             x0_observables_encoder=Encoder(input_dim=args.input_dim, hidden_dim=args.hidden_dim),
             x_T_observables_encoder=Encoder(input_dim=args.input_dim, hidden_dim=args.hidden_dim),

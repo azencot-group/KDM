@@ -5,11 +5,10 @@ import copy
 import numpy as np
 import torch
 
-from koopman_distillation.evaluation.fid import sample_and_calculate_fid, sample_and_calculate_fid_and_is
+from koopman_distillation.evaluation.fid import sample_and_calculate_fid_and_is
 from koopman_distillation.evaluation.wassertien_distance import measure_wess_distance
-from koopman_distillation.model.modules.model_cifar10 import Discriminator
-from koopman_distillation.utils.loggers.logging import plot_samples
-from old.distillation.utils.display import plot_spectrum
+from koopman_distillation.models.koopman_model_cifar10 import Discriminator
+from koopman_distillation.utils.loggers.logging import plot_samples, plot_spectrum
 
 
 class TrainLoop:
@@ -135,14 +134,14 @@ class TrainLoop:
 
             torch.save(self.model, f'{self.output_dir}/last_model.pt')
             torch.save(self.ema, f'{self.output_dir}/last_ema_model.pt')
-            # save the model
+            # save the models
 
         # checkerboard evaluation
         elif iteration % (self.print_every * 10) == 0 and self.data_shape[0] == 2:
             torch.save(self.model, f'{self.output_dir}/model.pt')
             wess_distance = measure_wess_distance(self.model, self.device, self.train_data, num_samples=40000)
             self.logger.log('wess_distance', wess_distance, iteration)
-            # save the model
+            # save the models
 
     def evaluation_of_test_data(self, iteration):
         if self.test_data is None or self.cond:

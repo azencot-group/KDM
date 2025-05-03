@@ -8,6 +8,9 @@ from koopman_distillation.data.data_loading.data_loaders import load_data
 from koopman_distillation.utils.names import Datasets
 from sklearn.cluster import KMeans
 
+
+# todo - make this script self sustained and clean
+
 cifar10_cls = torch.hub.load("chenyaofo/pytorch-cifar-models", "cifar10_resnet20", pretrained=True)
 bs = 1024
 
@@ -37,8 +40,8 @@ class_to_name = {
 }
 
 model = torch.load(
-    '/home/bermann/functional_mapping/koopman_distillation/results/cifar_uncond/2025_04_08_17_50_26/model.pt')  # sota
-# '/home/bermann/functional_mapping/koopman_distillation/results/cifar_uncond/2025_04_08_22_31_21/model.pt')  # sota
+    '/home/bermann/functional_mapping/koopman_distillation/results/cifar_uncond/2025_04_08_17_50_26/models.pt')  # sota
+# '/home/bermann/functional_mapping/koopman_distillation/results/cifar_uncond/2025_04_08_22_31_21/models.pt')  # sota
 args = torch.load(
     '/home/bermann/functional_mapping/koopman_distillation/results/cifar_uncond/2025_04_08_17_50_26/args.pth')  # sote
 # '/home/bermann/functional_mapping/koopman_distillation/results/cifar_uncond/2025_04_08_22_31_21/args.pth')
@@ -68,7 +71,7 @@ data_min = data.min()
 data_max = data.max()
 data = 2 * (data - data_min) / (data_max - data_min) - 1
 
-# Assuming you have some embeddings or representations to cluster (e.g., from a model)
+# Assuming you have some embeddings or representations to cluster (e.g., from a models)
 # Flatten the data for clustering (batch_size x features)
 X = data.view(data.size(0), -1).cpu().numpy()
 # Run KMeans clustering
