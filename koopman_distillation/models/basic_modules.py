@@ -853,3 +853,22 @@ class EDMPrecond(torch.nn.Module):
 
     def round_sigma(self, sigma):
         return torch.as_tensor(sigma)
+
+
+class LinearControlModule(torch.nn.Module):
+    def __init__(self, main_module, in_channels, out_channels, original_shape, before_main_module=False):
+        super().__init__()
+        self.original_shape = original_shape
+        self.before_main_module = before_main_module
+        self.main_module = main_module
+        self.linear = Linear(in_features=in_channels, out_features=out_channels, init_mode='xavier_uniform')
+
+    def forward(self, x, t, labels):
+        if self.before_main_module:
+            z = self.linear(x).reshape(x.shape[0], *self.original_shape)
+            z = self.main_module(z, t, labels)
+            return z
+        else:
+            z = self.main_module(x, t, labels)
+            z = self.linear(z.reshape(z.shape[0], -1))
+            return z

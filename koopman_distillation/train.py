@@ -1,16 +1,12 @@
 import sys
 import torch
 
-sys.path.append('.')
-sys.path.append('..')
-sys.path.append('../../')
-sys.path.append('../../../')
 from koopman_distillation.utils.names import CondType
 from koopman_distillation.utils.loggers import CompositeLogger, NeptuneLogger, PrintLogger
 from koopman_distillation.configs.config_router import get_configs
 from koopman_distillation.data.data_loading.data_loaders import load_data
 from koopman_distillation.trainer.trainer import TrainLoop
-from koopman_distillation.utils.loading_models import create_distillation_model, loading_pre_trained_weights
+from koopman_distillation.utils.loading_models import create_distillation_model
 from koopman_distillation.utils.loggers.logging import create_workdir, log_config_and_tags, print_model_params
 
 
@@ -29,9 +25,6 @@ def main(args):
         dsm = dsm.cuda()
         print_model_params(logger, dsm)
 
-        # --- load pre-trained models if needed --- #
-        loading_pre_trained_weights(dsm)
-
         # --- load data --- #
         logger.info("creating data loader...")
         train_data, test_data = load_data(
@@ -40,7 +33,6 @@ def main(args):
             dataset_path_test=args.datapath_test,
             batch_size=args.batch_size,
             num_workers=args.num_workers,
-            dataset_subset=args.dataset_subset,
         )
 
         logger.info("training...")
@@ -56,7 +48,6 @@ def main(args):
             output_dir=workdir,
             device=torch.device('cuda'),
             logger=logger,
-            ema_rate=args.ema_rate,
             advers=args.advers,
             cond=args.cond_type != CondType.Uncond,
             advers_w=args.advers_w,

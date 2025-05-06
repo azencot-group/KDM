@@ -6,14 +6,13 @@ import numpy as np
 import torch
 
 from koopman_distillation.evaluation.fid import sample_and_calculate_fid_and_is
-from koopman_distillation.evaluation.wassertien_distance import measure_wess_distance
-from koopman_distillation.models.koopman_model_cifar10 import Discriminator
+from koopman_distillation.models.koopman_model import Discriminator
 from koopman_distillation.utils.loggers.logging import plot_samples, plot_spectrum
 
 
 class TrainLoop:
-    def __init__(self, model, train_data, test_data, batch_size, device, output_dir, logger, ema_rate,
-                 iterations=400001, lr=0.0003, print_every=50, data_shape=(2), teach_model=False, advers=False,
+    def __init__(self, model, train_data, test_data, batch_size, device, output_dir, logger,
+                 iterations=800001, lr=0.0003, print_every=50, data_shape=(2), teach_model=False, advers=False,
                  cond=False, advers_w=1):
         self.model = model
         self.ema = copy.deepcopy(model).eval().requires_grad_(False)
@@ -48,18 +47,18 @@ class TrainLoop:
         i = 0
         while i < self.iterations:
             batch = next(self.train_data)
-            xt, xT, labels = batch
+            x0, xT, labels = batch
             if torch.isnan(labels).any():
                 labels = None
             else:
                 labels = labels.to(self.device)
-            xt = xt.to(self.device)
+            x0 = x0.to(self.device)
             xT = xT.to(self.device)
 
             self.optimizer.zero_grad()
 
             # return all components relevant for loss calculation
-            fw_comp = self.model(x_0=xt, x_T=xT, labels=labels)
+            fw_comp = self.model(x0=x0, xT=xT, labels=labels)
 
             # --- disc losses --- #
             if self.advers:
@@ -81,7 +80,7 @@ class TrainLoop:
             # --- evaluations --- #
             if (i + 1) % self.print_every == 0:
                 self.model.eval()
-                self.evaluation_of_test_data(i + 1)
+                self.evaluation_on_test_data(i + 1)
                 self.evaluation_of_train_and_generation(start_time, losses, i + 1)
                 start_time = time.time()
                 self.model.train()
@@ -98,13 +97,13 @@ class TrainLoop:
         # evaluate fid for cifar10
         if iteration % (self.print_every * 100) == 0 and self.data_shape[0] == 3:
             ema_is_model, ema_fid_model = sample_and_calculate_fid_and_is(model=self.ema,
-                                                                  data_shape=self.data_shape,
-                                                                  num_samples=50_000,
-                                                                  device=self.device,
-                                                                  batch_size=self.batch_size,
-                                                                  epoch=iteration,
-                                                                  image_dir=self.output_dir,
-                                                                  cond=self.cond)
+                                                                          data_shape=self.data_shape,
+                                                                          num_samples=50_000,
+                                                                          device=self.device,
+                                                                          batch_size=self.batch_size,
+                                                                          epoch=iteration,
+                                                                          image_dir=self.output_dir,
+                                                                          cond=self.cond)
             is_model, fid_model = sample_and_calculate_fid_and_is(model=self.model,
                                                                   data_shape=self.data_shape,
                                                                   num_samples=50_000,
@@ -119,7 +118,7 @@ class TrainLoop:
             self.logger.log('model_fid', fid_model, iteration)
             self.logger.log('model_is', is_model, iteration)
 
-            plot_spectrum(self.model.koopman_operator, self.output_dir, self.logger)
+            plot_spectrum(self.model.get_koopman_operator(), self.output_dir, self.logger)
             # plot qualitative results
             plot_samples(self.logger, self.model, self.batch_size, self.device, self.data_shape, self.output_dir,
                          self.cond)
@@ -139,11 +138,8 @@ class TrainLoop:
         # checkerboard evaluation
         elif iteration % (self.print_every * 10) == 0 and self.data_shape[0] == 2:
             torch.save(self.model, f'{self.output_dir}/model.pt')
-            wess_distance = measure_wess_distance(self.model, self.device, self.train_data, num_samples=40000)
-            self.logger.log('wess_distance', wess_distance, iteration)
-            # save the models
 
-    def evaluation_of_test_data(self, iteration):
+    def evaluation_on_test_data(self, iteration):
         if self.test_data is None or self.cond:
             return
 
@@ -151,15 +147,15 @@ class TrainLoop:
         num_batches = 0
 
         for test_batch in self.test_data:
-            xT, xt, labels = test_batch
+            xT, x0, labels = test_batch  # test data is opposite to train
             if torch.isnan(labels).any():
                 labels = None
             else:
                 labels = labels.to(self.device)
-            xt = xt.to(self.device)
+            x0 = x0.to(self.device)
             xT = xT.to(self.device)
             # return all components relevant for loss calculation
-            fw_comp = self.model(x_0=xt, x_T=xT, labels=labels)
+            fw_comp = self.model(x0=x0, xT=xT, labels=labels)
             # calculate loss
             test_losses = self.model.loss(fw_comp, self.discriminator)
 

@@ -20,17 +20,9 @@ class CheckerboardDataset(torch.utils.data.Dataset):
 
 
 class Cifar10Dataset(torch.utils.data.Dataset):
-    def __init__(self, path, dataset_subset):
-        cut = 1_000_000
-        if dataset_subset == '50k':
-            cut = 50_000
-        elif dataset_subset == '250k':
-            cut = 250_000
-        elif dataset_subset == '500k':
-            cut = 500_000
-
+    def __init__(self, path):
         # parse all the paths in path
-        self.paths = glob.glob(path + '/*')[:cut]
+        self.paths = glob.glob(path + '/*')
 
     def __len__(self):
         return len(self.paths)
@@ -39,6 +31,22 @@ class Cifar10Dataset(torch.utils.data.Dataset):
         dynamics = np.load(self.paths[ix])['arr_0']
         x0: Tensor = torch.tensor(dynamics[-1]).float()
         xT: Tensor = torch.tensor(dynamics[0]).float()
+
+        return x0, xT, np.nan  # dummy label
+
+
+class Cifar10DatasetFlowMatching(torch.utils.data.Dataset):
+    def __init__(self, path):
+        # parse all the paths in path
+        self.paths = glob.glob(path + '/*')
+
+    def __len__(self):
+        return len(self.paths)
+
+    def __getitem__(self, ix):
+        dynamics = np.load(self.paths[ix])['arr1']
+        x0: Tensor = torch.tensor(dynamics[0]).float()
+        xT: Tensor = torch.tensor(dynamics[-1]).float()
 
         return x0, xT, np.nan  # dummy label
 
@@ -60,3 +68,35 @@ class Cifar10DatasetCond(torch.utils.data.Dataset):
         label = data['label']
 
         return x0, xT, label
+
+
+class FFHQDataset(torch.utils.data.Dataset):
+    def __init__(self, path):
+        # parse all the paths in path
+        self.paths = glob.glob(path + '/*')
+
+    def __len__(self):
+        return len(self.paths)
+
+    def __getitem__(self, ix):
+        dynamics = np.load(self.paths[ix])['arr_0']
+        x0: Tensor = torch.tensor(dynamics[0]).float()
+        xT: Tensor = torch.tensor(dynamics[-1]).float()
+
+        return x0, xT, np.nan  # dummy label
+
+
+class AFHQv2Dataset(torch.utils.data.Dataset):
+    def __init__(self, path):
+        # parse all the paths in path
+        self.paths = glob.glob(path + '/*')
+
+    def __len__(self):
+        return len(self.paths)
+
+    def __getitem__(self, ix):
+        dynamics = np.load(self.paths[ix])['arr_0']
+        x0: Tensor = torch.tensor(dynamics[0]).float()
+        xT: Tensor = torch.tensor(dynamics[-1]).float()
+
+        return x0, xT, np.nan  # dummy label

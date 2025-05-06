@@ -3,7 +3,7 @@ from torch.utils.data import Sampler
 import torch
 
 from koopman_distillation.data.data_loading.datasets_objects import CheckerboardDataset, Cifar10Dataset, \
-    Cifar10DatasetCond
+    Cifar10DatasetCond, FFHQDataset, AFHQv2Dataset, Cifar10DatasetFlowMatching
 from koopman_distillation.utils.names import Datasets
 
 
@@ -53,32 +53,18 @@ class InfiniteBatchSampler(Sampler):
         return self.iters_per_ep
 
 
-def load_data(dataset: Datasets, dataset_path: str, dataset_path_test: str, batch_size: int, num_workers: int,
-              dataset_subset: str = 'no_subset'):
+def load_data(dataset: Datasets, dataset_path: str, dataset_path_test: str, batch_size: int, num_workers: int):
     if dataset == Datasets.Checkerboard:
-        return torch.utils.data.DataLoader(CheckerboardDataset(dataset_path),
-                                           num_workers=num_workers,
-                                           batch_size=batch_size,
-                                           shuffle=True,
-                                           drop_last=True), None
+        data = CheckerboardDataset(dataset_path)
+        return torch.utils.data.DataLoader(dataset=data,
+                                           pin_memory=True,
+                                           batch_sampler=InfiniteBatchSampler(dataset_len=len(data),
+                                                                              batch_size=batch_size),
+                                           num_workers=num_workers), None
 
 
     elif dataset == Datasets.Cifar10_1M_Uncond:
-        train_set = Cifar10Dataset(dataset_path, dataset_subset)
-        train_data = torch.utils.data.DataLoader(dataset=train_set,
-                                                 pin_memory=True,
-                                                 batch_sampler=InfiniteBatchSampler(dataset_len=len(train_set),
-                                                                                    batch_size=batch_size),
-                                                 num_workers=num_workers)
-        test_data = torch.utils.data.DataLoader(Cifar10Dataset(dataset_path_test, dataset_subset),
-                                                num_workers=num_workers,
-                                                batch_size=batch_size,
-                                                shuffle=False,
-                                                drop_last=True)
-        return train_data, test_data
-
-    elif dataset == Datasets.Cifar10_1M_Cond:
-        train_set = Cifar10DatasetCond(dataset_path)
+        train_set = Cifar10Dataset(dataset_path)
         train_data = torch.utils.data.DataLoader(dataset=train_set,
                                                  pin_memory=True,
                                                  batch_sampler=InfiniteBatchSampler(dataset_len=len(train_set),
@@ -89,6 +75,47 @@ def load_data(dataset: Datasets, dataset_path: str, dataset_path_test: str, batc
                                                 batch_size=batch_size,
                                                 shuffle=False,
                                                 drop_last=True)
+        return train_data, test_data
+
+    elif dataset == Datasets.Cifar10_1M_Uncond_FM:
+        train_set = Cifar10DatasetFlowMatching(dataset_path)
+        train_data = torch.utils.data.DataLoader(dataset=train_set,
+                                                 pin_memory=True,
+                                                 batch_sampler=InfiniteBatchSampler(dataset_len=len(train_set),
+                                                                                    batch_size=batch_size),
+                                                 num_workers=num_workers)
+        test_data = None
+        return train_data, test_data
+
+
+    elif dataset == Datasets.Cifar10_1M_Cond:
+        train_set = Cifar10DatasetCond(dataset_path)
+        train_data = torch.utils.data.DataLoader(dataset=train_set,
+                                                 pin_memory=True,
+                                                 batch_sampler=InfiniteBatchSampler(dataset_len=len(train_set),
+                                                                                    batch_size=batch_size),
+                                                 num_workers=num_workers)
+        test_data = None
+        return train_data, test_data
+
+    elif dataset == Datasets.FFHQ_1M:
+        train_set = FFHQDataset(dataset_path)
+        train_data = torch.utils.data.DataLoader(dataset=train_set,
+                                                 pin_memory=True,
+                                                 batch_sampler=InfiniteBatchSampler(dataset_len=len(train_set),
+                                                                                    batch_size=batch_size),
+                                                 num_workers=num_workers)
+        test_data = None
+        return train_data, test_data
+
+    elif dataset == Datasets.AFHQ_250K:
+        train_set = AFHQv2Dataset(dataset_path)
+        train_data = torch.utils.data.DataLoader(dataset=train_set,
+                                                 pin_memory=True,
+                                                 batch_sampler=InfiniteBatchSampler(dataset_len=len(train_set),
+                                                                                    batch_size=batch_size),
+                                                 num_workers=num_workers)
+        test_data = None
         return train_data, test_data
 
     else:

@@ -23,26 +23,9 @@ module load anaconda				### load anaconda module (must be present when working w
 #source activate /home/bermann/.conda/envs/edm/				### activate a conda environment, replace my_env with your conda environment
 source activate /home/naimani/.conda/envs/edm				### activate a conda environment, replace my_env with your conda environment
 
+export PYTHONPATH=/cs_storage/bermann/functional_mapping:$PYTHONPATH
+
 # latent space scaling
-#python main.py --config_name koopman/cifar_uncond --neptune True --out_channels 3 --tags cifar_higher_space
-#python main.py --config_name koopman/cifar_uncond --neptune True --out_channels 6 --tags cifar_higher_space
-
-# data amount scaling
-#python main.py --config_name koopman/cifar_uncond --neptune True --dataset_subset 50k --tags dataset_scale
-#python main.py --config_name koopman/cifar_uncond --neptune True --dataset_subset 250k --tags dataset_scale
-#python main.py --config_name koopman/cifar_uncond --neptune True --dataset_subset 500k --tags dataset_scale
-
-# parameters scaling down
-#python main.py --config_name koopman/cifar_uncond --neptune True --channel_mult 1 2 2 2 --model_channels 20 --tags parameters_scale # 20m
-#python main.py --config_name koopman/cifar_uncond --neptune True --channel_mult 1 2 2 4 --model_channels 32 --tags parameters_scale # 38m
-#python main.py --config_name koopman/cifar_uncond --neptune True --channel_mult 1 1 3 3 --model_channels 64 --tags parameters_scale # 84m
-
-#python main.py --config_name koopman/cifar_uncond --neptune True --advers_w 0 --w_latent 1 --w_rec 0 --w_push 0 --tags loss_abl
-#python main.py --config_name koopman/cifar_uncond --neptune True --advers_w 0 --w_latent 0 --w_rec 1 --w_push 0 --tags loss_abl
-#python main.py --config_name koopman/cifar_uncond --neptune True --advers_w 0 --w_latent 0 --w_rec 0 --w_push 1 --tags loss_abl
-#python main.py --config_name koopman/cifar_uncond --neptune True --advers_w 0 --w_latent 0 --w_rec 1 --w_push 1 --tags loss_abl
-#python main.py --config_name koopman/cifar_uncond --neptune True --advers_w 0 --w_latent 1 --w_rec 1 --w_push 0 --tags loss_abl
-#python main.py --config_name koopman/cifar_uncond --neptune True --advers_w 0 --w_latent 1 --w_rec 0 --w_push 1 --tags loss_abl
-
-#python main.py --config_name koopman/cifar_uncond_fast --neptune True --tags spectrum_abl --batch_size 128 --koopman_loss_type Uniform
-python main.py --config_name koopman/cifar_uncond_fast --neptune True --tags spectrum_abl --batch_size 128 --koopman_loss_type GradualUniform
+python train.py --config_name koopman/cifar_uncond --neptune True
+#python train.py --config_name koopman/cifar_uncond_fast --neptune True
+#python train.py --config_name koopman/cifar_cond --neptune True

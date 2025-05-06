@@ -2,6 +2,7 @@ from datetime import datetime
 from pathlib import Path
 import logging
 from matplotlib import pyplot as plt
+import numpy as np
 
 import torch
 
@@ -59,10 +60,10 @@ def plot_samples(logger, model, batch_size, device, data_shape, output_dir, cond
 
 
 def plot_spectrum(C, output_dir, logger):
-    if C.dtype in [torch.float32, torch.float64]:
-        C = C.detach().cpu().numpy()
-
-    D = np.linalg.eigvals(C)
+    if isinstance(C, list):
+        D = np.linalg.eigvals((C[0] @ C[1] @ C[2]).detach().cpu().numpy())
+    else:
+        D = np.linalg.eigvals(C.detach().cpu().numpy())
 
     plt.close('all')
     fig = plt.figure()

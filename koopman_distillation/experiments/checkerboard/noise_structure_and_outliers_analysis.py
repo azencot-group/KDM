@@ -3,17 +3,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
 from scipy.stats import zscore
-from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE
 from sklearn.cluster import KMeans
 
 from koopman_distillation.data.data_loading.data_loaders import load_data
 from koopman_distillation.utils.names import Datasets
-from old.distillation.koopman_model import OneStepKoopmanModel
 
 seed = 42
 np.random.seed(seed)
 torch.manual_seed(seed)
+
 
 def detect_outliers(points, eps=0.5, min_samples=5, z_thresh=3.0):
     """
@@ -58,8 +56,8 @@ else:
 
 train_data, _ = load_data(
     dataset=Datasets.Checkerboard,
-    dataset_path='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/checkerboard/sol.npy',
-    dataset_path_test='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/checkerboard/sol.npy',
+    dataset_path='../../data/checkerboard/sampled_dataset.npy',
+    dataset_path_test='',
     batch_size=10000,
     num_workers=4,
 )
@@ -68,46 +66,18 @@ batch = next(iter(train_data))
 
 plt.scatter(batch[0][:, 0], batch[0][:, 1], c="blue", alpha=0.6)
 plt.legend()
-plt.title("Outlier Detection in 2D Plane")
+plt.title("Dataset Sampled by a Diffusion Model Visualization")
 plt.xlabel("X-axis")
 plt.ylabel("Y-axis")
 plt.show()
 
-# training arguments
-time_steps = 10
-hidden_dim = 256
-noisy_latent = 0.4
-rec_xT_loss = False
-push = 'all_linear'
-
-
-# todo - train a models instead of loading one
-km = OneStepKoopmanModel(hidden_dim=hidden_dim,
-                         time_steps=time_steps,
-                         noisy_latent=noisy_latent,
-                         push=push,
-                         rec_xT_loss=rec_xT_loss).to(device)
-
-km.load_state_dict(torch.load(f'/home/bermann/functional_mapping/distillation/koopman_model_v0.pt'))
-# km.load_state_dict(torch.load(f'/home/bermann/functional_mapping/old/distillation/koopman_model_v0_no_noise.pt'))
+# Load the model and sample
+km = torch.load('./model.pt')
 samples = km.sample(10000, device)
 x0 = samples[0].cpu().detach()
 x0_data = batch[0].cpu().detach()
 xT = samples[1].cpu().detach()
 xT_data = batch[1].cpu().detach()
-
-torch.save(x0, './x0.pt')
-torch.save(x0_data, './x0_data.pt')
-torch.save(xT, './xT.pt')
-torch.save(xT_data, './xT_data.pt')
-
-x0 = torch.load('./x0.pt')
-x0_data = torch.load('./x0_data.pt')
-xT = torch.load('./xT.pt')
-xT_data = torch.load('./xT_data.pt')
-
-
-
 
 # === Outliers + clustering for x0_data ===
 (inliers_data, inlier_indices_data), (detected_outliers_data, outlier_indices_data) = detect_outliers(x0_data, eps=0.15)
@@ -124,31 +94,16 @@ labels = kmeans.fit_predict(x0)
 labels_inliers = labels[inlier_indices]
 labels_outliers = labels[outlier_indices]
 
-
-from sklearn.metrics import davies_bouldin_score
-score_x0 = davies_bouldin_score(x0, labels)
-print("DBI score x0: ", score_x0)
-score_xT = davies_bouldin_score(xT, labels)
-print("DBI score xT: ", score_xT)
-from sklearn.metrics import silhouette_score
-score_x0 = silhouette_score(x0, labels)
-print("Silhouette score x0: ", score_x0)
-score_xT = silhouette_score(xT, labels)
-print("Silhouette score xT: ", score_xT)
-from sklearn.metrics import calinski_harabasz_score
-score_x0 = calinski_harabasz_score(x0, labels)
-print("Calinski score x0: ", score_x0)
-score_xT = calinski_harabasz_score(xT, labels)
-print("Calinski score xT: ", score_xT)
-
 # === Create 2x2 subplot ===
 fig, axes = plt.subplots(2, 2, figsize=(10, 10))
+
 
 def plot(ax, points, in_idx, out_idx, labels_in, title):
     ax.scatter(points[in_idx, 0], points[in_idx, 1], c=labels_in, alpha=0.4, rasterized=True)
     ax.scatter(points[out_idx, 0], points[out_idx, 1], c='red', marker='x', alpha=0.9, rasterized=True)
     ax.set_title(title)
     ax.axis('off')
+
 
 # First row: generated x₀ and x_T
 plot(axes[0, 0], x0, inlier_indices, outlier_indices, labels_inliers, "x₀: Generated")
