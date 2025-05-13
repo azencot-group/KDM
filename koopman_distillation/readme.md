@@ -1,9 +1,143 @@
-To run training on checkerboard data, run the following command:
+# Koopman Distillation Models for Offline One-Step Denoising Distillation
+
+This repository contains the official implementation of our paper on Koopman-based distillation models for efficient one-step denoising in offline setup.
+
+---
+
+## 🛠 Installation
+
+Follow these steps to set up the environment:
+
+### 1. Create a Conda Environment
+
+Open your terminal and run:
+
 ```
---config_name koopman/checkerboard_uncond --batch_size 32 --rec_loss_type L2
+conda create --name your_env_name python=3.8
+conda activate your_env_name
 ```
 
-To run training and evaluation on cifar10 data, run the following command:
+> Replace `your_env_name` with your preferred environment name.
+
+### 2. Install Dependencies
+
+Navigate to the root directory of this repository and install the required Python packages:
+
 ```
---config_name koopman/cifar10_uncond --batch_size 32 --rec_loss_type L2
+pip install -r requirements.txt
 ```
+
+### 3. Download Datasets
+
+See the section below for instructions.
+
+---
+
+## 📁 Data and Artifacts
+
+### Checkerboard Dataset
+
+The checkerboard dataset is already included in the repository:
+
+```
+data/Checkerboard/sampled_dataset.npy
+```
+
+This file contains 50k samples from a flow-matching model. No need for additional actions.
+
+### Cifar10 (Unconditional & Conditional), FFHQ and AFHQv2 Datasets
+
+To use these datasets:
+
+1. Download them from the following Google Drive folder:  
+   [Dataset Drive Folder](https://drive.google.com/drive/u/1/folders/19u6696ItAkG2kTfjfa4w-RhEqFHnpfLf)
+
+2. Unzip the downloaded file into the `data/` directory.
+
+3. Update the corresponding config file with the correct path.  
+   For example, for unconditional CIFAR-10, edit the config file:
+
+   ```
+   configs/koopman/cifar_uncond.py
+   ```
+
+   and set the correct data path:
+
+   ```python
+   data_path='data/{path_to_unzipped_folder}'
+   ```
+   or either just add it as a command line argument later on.
+
+### Optional: Test Data for Unconditional CIFAR-10
+
+We also provide 1000 additional EDM-generated samples (not used during training) for overfitting and debugging checks. You can find it in the Drive folder 
+, download and unzip it and then, and you can set in the config file under the name `datapath_test`.
+
+---
+### Artifacts
+
+1. Model outputs are saved to the path specified in the `output_prefix_path` argument.
+2. Neptune logging is supported. By default, basic console logging is enabled.
+
+---
+
+## 🚀 Training, Evaluation, and Analysis
+
+You're ready to go! Below are example commands for running training and evaluation.
+
+### Checkerboard
+
+#### Training
+
+```
+python train.py --config koopman/checkerboard_uncond
+```
+
+#### Analysis
+
+To reproduce the noise structure and outlier analysis plots in the paper:
+
+```
+python experiments/checkerboard/analysis.py
+```
+
+---
+
+### CIFAR-10 (Unconditional and Conditional), FFHQ and AFHQv2 
+
+#### Training
+
+To train the unconditional CIFAR-10 model:
+
+```
+python train.py --config koopman/cifar10_uncond
+```
+
+To train the conditional CIFAR-10 model:
+```
+python train.py --config koopman/cifar10_cond
+```
+
+To train the unconditional FFHQ model:
+```
+python train.py --config koopman/ffhq_uncond
+```
+
+To train the unconditional AFHQv2 model:
+```
+python train.py --config koopman/afhq_uncond
+```
+
+#### Decomposed Matrix Version
+We enable a decomposed implementation  of the koopman matrix. Please see our paper appendix for more details
+or follow the code. To use decomposed koopman matrix, please run the following config file:
+```
+python train.py --config koopman/cifar_uncond_decomposed
+```
+
+
+
+**Evaluation of FID and IS scores is automatically handled during training.**
+
+# Citation
+TODO

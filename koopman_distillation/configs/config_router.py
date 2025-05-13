@@ -13,41 +13,27 @@ def get_configs():
         from koopman_distillation.configs.koopman.cifar_uncond import load_arguments
         load_arguments(parser)
 
-    elif 'koopman/cifar_uncond_precond_2_4' == parser.parse_known_args()[0].config_name:
-        from koopman_distillation.configs.koopman.cifar_uncond_precond_2_4 import load_arguments
+    elif 'koopman/cifar_uncond_decomposed' == parser.parse_known_args()[0].config_name:
+        from koopman_distillation.configs.koopman.cifar_uncond_decomposed import load_arguments
         load_arguments(parser)
 
-    elif 'koopman/cifar_uncond_adverserial_2_4' == parser.parse_known_args()[0].config_name:
-        from koopman_distillation.configs.koopman.cifar_uncond_adverserial_2_4 import load_arguments
+    elif 'koopman/cifar_cond' == parser.parse_known_args()[0].config_name:
+        from koopman_distillation.configs.koopman.cifar_cond import load_arguments
         load_arguments(parser)
 
-    elif 'koopman/cifar_uncond_dmdkoopman' == parser.parse_known_args()[0].config_name:
-        from koopman_distillation.configs.koopman.cifar_uncond_dmdkoopman import load_arguments
+    elif 'koopman/ffhq_uncond' == parser.parse_known_args()[0].config_name:
+        from koopman_distillation.configs.koopman.ffhq_uncond import load_arguments
         load_arguments(parser)
 
-    elif 'koopman/cifar_uncond_dmdkoopman_batch' == parser.parse_known_args()[0].config_name:
-        from koopman_distillation.configs.koopman.cifar_uncond_dmdkoopman_batch import load_arguments
-        load_arguments(parser)
-
-    elif 'koopman/cifar_uncond_vae' == parser.parse_known_args()[0].config_name:
-        from koopman_distillation.configs.koopman.cifar_uncond_vae import load_arguments
+    elif 'koopman/afhq_uncond' == parser.parse_known_args()[0].config_name:
+        from koopman_distillation.configs.koopman.afhq_uncond import load_arguments
         load_arguments(parser)
 
     elif 'koopman/checkerboard_uncond' == parser.parse_known_args()[0].config_name:
         from koopman_distillation.configs.koopman.checkerboard_uncond import load_arguments
         load_arguments(parser)
-
-    elif 'koopman/checkerboard_uncond_dmdkoopman' == parser.parse_known_args()[0].config_name:
-        from koopman_distillation.configs.koopman.checkerboard_uncond_dmdkoopman import load_arguments
-        load_arguments(parser)
-
-    # --- CM configs --- #
-    elif 'cm/cifar_uncond' == parser.parse_known_args()[0].config_name:
-        from koopman_distillation.configs.cm.cifar_uncond import load_arguments
-        load_arguments(parser)
-
     else:
-        raise ModuleNotFoundError("No such config file")
+        raise ModuleNotFoundError(f"No such config file {parser.parse_known_args()[0].config_name}")
 
     args = parser.parse_args()
     print(args)

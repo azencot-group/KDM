@@ -1,10 +1,10 @@
 import numpy as np
 from torch.utils.data import Sampler
+import torch
 
 from koopman_distillation.data.data_loading.datasets_objects import CheckerboardDataset, Cifar10Dataset, \
-    FIDCifar10Dataset, Cifar10DatasetFastLoading
+    Cifar10DatasetCond, FFHQDataset, AFHQv2Dataset, Cifar10DatasetFlowMatching
 from koopman_distillation.utils.names import Datasets
-import torch
 
 
 class InfiniteBatchSampler(Sampler):
@@ -55,25 +55,21 @@ class InfiniteBatchSampler(Sampler):
 
 def load_data(dataset: Datasets, dataset_path: str, dataset_path_test: str, batch_size: int, num_workers: int):
     if dataset == Datasets.Checkerboard:
-        return torch.utils.data.DataLoader(CheckerboardDataset(dataset_path),
-                                           num_workers=num_workers,
-                                           batch_size=batch_size,
-                                           shuffle=True,
-                                           drop_last=True), None
+        data = CheckerboardDataset(dataset_path)
+        return torch.utils.data.DataLoader(dataset=data,
+                                           pin_memory=True,
+                                           batch_sampler=InfiniteBatchSampler(dataset_len=len(data),
+                                                                              batch_size=batch_size),
+                                           num_workers=num_workers), None
 
 
-    elif dataset == Datasets.Cifar10:
+    elif dataset == Datasets.Cifar10_1M_Uncond:
         train_set = Cifar10Dataset(dataset_path)
         train_data = torch.utils.data.DataLoader(dataset=train_set,
                                                  pin_memory=True,
                                                  batch_sampler=InfiniteBatchSampler(dataset_len=len(train_set),
                                                                                     batch_size=batch_size),
                                                  num_workers=num_workers)
-        # train_data = torch.utils.data.DataLoader(Cifar10Dataset(dataset_path),
-        #                                          num_workers=num_workers,
-        #                                          batch_size=batch_size,
-        #                                          shuffle=True,
-        #                                          drop_last=True)
         test_data = torch.utils.data.DataLoader(Cifar10Dataset(dataset_path_test),
                                                 num_workers=num_workers,
                                                 batch_size=batch_size,
@@ -81,23 +77,46 @@ def load_data(dataset: Datasets, dataset_path: str, dataset_path_test: str, batc
                                                 drop_last=True)
         return train_data, test_data
 
-    elif dataset == Datasets.Cifar10FastOneStepLoading:
+    elif dataset == Datasets.Cifar10_1M_Uncond_FM:
+        train_set = Cifar10DatasetFlowMatching(dataset_path)
+        train_data = torch.utils.data.DataLoader(dataset=train_set,
+                                                 pin_memory=True,
+                                                 batch_sampler=InfiniteBatchSampler(dataset_len=len(train_set),
+                                                                                    batch_size=batch_size),
+                                                 num_workers=num_workers)
+        test_data = None
+        return train_data, test_data
 
-        train_data = torch.utils.data.DataLoader(Cifar10DatasetFastLoading(dataset_path),
-                                                 num_workers=num_workers,
-                                                 batch_size=batch_size,
-                                                 shuffle=True,
-                                                 drop_last=True)
-        test_data = torch.utils.data.DataLoader(Cifar10Dataset(dataset_path_test),
-                                                num_workers=num_workers,
-                                                batch_size=batch_size,
-                                                shuffle=True,
-                                                drop_last=True)
+
+    elif dataset == Datasets.Cifar10_1M_Cond:
+        train_set = Cifar10DatasetCond(dataset_path)
+        train_data = torch.utils.data.DataLoader(dataset=train_set,
+                                                 pin_memory=True,
+                                                 batch_sampler=InfiniteBatchSampler(dataset_len=len(train_set),
+                                                                                    batch_size=batch_size),
+                                                 num_workers=num_workers)
+        test_data = None
+        return train_data, test_data
+
+    elif dataset == Datasets.FFHQ_1M:
+        train_set = FFHQDataset(dataset_path)
+        train_data = torch.utils.data.DataLoader(dataset=train_set,
+                                                 pin_memory=True,
+                                                 batch_sampler=InfiniteBatchSampler(dataset_len=len(train_set),
+                                                                                    batch_size=batch_size),
+                                                 num_workers=num_workers)
+        test_data = None
+        return train_data, test_data
+
+    elif dataset == Datasets.AFHQ_250K:
+        train_set = AFHQv2Dataset(dataset_path)
+        train_data = torch.utils.data.DataLoader(dataset=train_set,
+                                                 pin_memory=True,
+                                                 batch_sampler=InfiniteBatchSampler(dataset_len=len(train_set),
+                                                                                    batch_size=batch_size),
+                                                 num_workers=num_workers)
+        test_data = None
         return train_data, test_data
 
     else:
         raise NotImplementedError(f"Dataset {dataset} not implemented")
-
-
-def load_data_for_testing(path):
-    return FIDCifar10Dataset(path)

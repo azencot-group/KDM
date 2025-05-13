@@ -2,6 +2,7 @@ from datetime import datetime
 from pathlib import Path
 import logging
 from matplotlib import pyplot as plt
+import numpy as np
 
 import torch
 
@@ -31,12 +32,18 @@ def log_config_and_tags(args, logger, name):
 
 def print_model_params(logger, model):
     params_num = sum(param.numel() for param in model.parameters())
-    logging.info("number of model parameters: {}".format(params_num))
+    logging.info("number of models parameters: {}".format(params_num))
     logger.log_name_params('config/params_num', params_num)
 
 
-def plot_samples(logger, model, batch_size, device, data_shape, output_dir, iteration, data_batch):
-    x0_sample = model.sample(batch_size, device, data_shape=data_shape, data_batch=data_batch)
+def plot_samples(logger, model, batch_size, device, data_shape, output_dir, cond=False):
+    if cond:
+        labels = torch.eye(model.label_dim, device=device)[
+            torch.randint(model.label_dim, size=[batch_size], device=device)]
+    else:
+        labels = None
+
+    x0_sample = model.sample(batch_size, device, data_shape=data_shape, labels=labels)
     if data_shape == (2,):
         fig = plt.figure(figsize=(7, 9))
         x0_sample = x0_sample[0].detach().cpu().numpy()
@@ -50,3 +57,28 @@ def plot_samples(logger, model, batch_size, device, data_shape, output_dir, iter
             img = translate_to_image_format(x0_sample[0][i].unsqueeze(dim=0))[0]
             plt.imshow(img)
             logger.log(f'{output_dir}/image_{i}', fig)
+
+
+def plot_spectrum(C, output_dir, logger):
+    if isinstance(C, list):
+        D = np.linalg.eigvals((C[0] @ C[1] @ C[2]).detach().cpu().numpy())
+    else:
+        D = np.linalg.eigvals(C.detach().cpu().numpy())
+
+    plt.close('all')
+    fig = plt.figure()
+    plt.plot(np.real(D), np.imag(D), 'o', color='#444444', alpha=0.45)
+
+    ax = plt.gca()
+    from matplotlib.patches import Circle
+
+    circle = Circle((0.0, 0.0), 1.0, fill=False)
+    ax.add_artist(circle)
+
+    ax.set_aspect('equal')
+    ax.set_xticks([-1, 0, 1])
+    ax.set_yticks([-1, 0, 1])
+    plt.xlabel('Real component')
+    plt.ylabel('Imaginary component')
+
+    logger.log(f'{output_dir}/spec', fig)
