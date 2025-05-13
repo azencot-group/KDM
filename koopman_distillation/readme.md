@@ -2,6 +2,7 @@
 
 This repository contains the official implementation of our paper on Koopman-based distillation models for efficient one-step denoising in offline setup.
 
+![Alt text](artifacts/our_framework.png)
 ---
 
 ## 🛠 Installation
@@ -135,6 +136,7 @@ or follow the code. To use decomposed koopman matrix, please run the following c
 python train.py --config koopman/cifar_uncond_decomposed
 ```
 
+--- 
 
 ### Evaluation
 **Note:** Currently, only evaluation on CIFAR-10 (conditional and unconditional) is supported.  
@@ -142,7 +144,7 @@ Support for FID and evaluation on additional datasets is coming soon.
 
 ---
 
-### CIFAR-10 Evaluation (Unconditional and Conditional)
+#### CIFAR-10 Evaluation (Unconditional and Conditional)
 
 To run evaluation:
 
@@ -153,5 +155,19 @@ To run evaluation:
    (IS, IS_std), FID = get_inception_score_and_fid(torch.tensor(all_images), '<path_to_ref_file>')
    ```
    
+---
+
+### Analysis
+To run the checkerboard latent structure and outlier analysis, execute the following command:
+```   
+python experiments/checkerboard/noise_structure_and_outliers_analysis.py
+```
+A pretrained model and the required data are included in the repository, 
+so the script runs automatically without any additional setup.
+
+![Alt text](artifacts/outlier_detection.png)
+
+---
+
 # Citation
 TODO
