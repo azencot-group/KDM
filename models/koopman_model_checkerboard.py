@@ -74,62 +74,62 @@ class Decoder(nn.Module):
 
 
 class KoopmanDistillModelCheckerBoard(torch.nn.Module):
-    def __init__(self, x0_observables_encoder, x_T_observables_encoder, x0_observables_decoder, koopman_operator,
+    def __init__(self, x0_observables_encoder, xT_observables_encoder, x0_observables_decoder, koopman_operator,
                  rec_loss_type, noisy_latent=0.4):
         super(KoopmanDistillModelCheckerBoard, self).__init__()
-        self.x_0_observables_encoder = x0_observables_encoder
-        self.x_T_observables_encoder = x_T_observables_encoder
+        self.x0_observables_encoder = x0_observables_encoder
+        self.xT_observables_encoder = xT_observables_encoder
         self.x0_observables_decoder = x0_observables_decoder
         self.koopman_operator = koopman_operator
 
         self.noisy_latent = noisy_latent
         self.rec_loss_type = rec_loss_type
 
-    def forward(self, x_0, x_T, labels=None):
-        T = torch.ones((x_0.shape[0],)).to(x_0.device)  # no use in one step, just a placeholder
-        t = torch.zeros((x_0.shape[0],)).to(x_0.device)  # no use in one step, just a placeholder
+    def forward(self, x0, xT, labels=None):
+        T = torch.ones((x0.shape[0],)).to(x0.device)  # no use in one step, just a placeholder
+        t = torch.zeros((x0.shape[0],)).to(x0.device)  # no use in one step, just a placeholder
 
         # the dynamical system start at state S in time 'T' in go backward in time to time 't'
-        z_0 = self.x_0_observables_encoder(x_0, t)
-        z_T = self.x_T_observables_encoder(x_T, T)
+        z0 = self.x0_observables_encoder(x0, t)
+        zT = self.xT_observables_encoder(xT, T)
 
-        z_0_noisy = z_0 + torch.randn_like(z_0) * self.noisy_latent
-        z_T_noisy = z_T + torch.randn_like(z_T) * self.noisy_latent
+        z0_noisy = z0 + torch.randn_like(z0) * self.noisy_latent
+        zT_noisy = zT + torch.randn_like(zT) * self.noisy_latent
 
-        z_0_pushed = self.koopman_operator(z_T_noisy)
+        z0_pushed = self.koopman_operator(zT_noisy)
 
         with torch.no_grad():
-            x_0_pushed_hat = self.x0_observables_decoder(z_0_noisy, t)
-            x_T_pushed_hat = self.x0_observables_decoder(z_T, t)
-            x_T_hat = self.x0_observables_decoder(z_T_noisy, T)
+            x0_pushed_hat = self.x0_observables_decoder(z0_noisy, t)
+            xT_pushed_hat = self.x0_observables_decoder(zT, t)
+            xT_hat = self.x0_observables_decoder(zT_noisy, T)
 
-        x_0_hat = self.x0_observables_decoder(z_0_noisy, t)
+        x0_hat = self.x0_observables_decoder(z0_noisy, t)
 
-        return {'x_0': x_0, 'x_T': x_T, 'z_0': z_0, 'z_T': z_T, 'z_0_pushed': z_0_pushed, 'x_0_hat': x_0_hat,
-                'x_0_pushed_hat': x_0_pushed_hat, 'x_T_pushed_hat': x_T_pushed_hat, 'x_T_hat': x_T_hat,
+        return {'x0': x0, 'xT': xT, 'z_0': z0, 'z_T': zT, 'z_0_pushed': z0_pushed, 'x0_hat': x0_hat,
+                'x0_pushed_hat': x0_pushed_hat, 'xT_pushed_hat': xT_pushed_hat, 'xT_hat': xT_hat,
                 'koopman_op': self.koopman_operator}
 
     def loss(self, loss_comps, discriminator=None):
         with torch.no_grad():
-            no_push_latent_rec_loss = ((loss_comps['x_0'] - loss_comps['x_T_pushed_hat']) ** 2).mean()
-            rec_loss_x_T = ((loss_comps['x_T'] - loss_comps['x_T_hat']) ** 2).mean()
-            push_latent_rec_loss = ((loss_comps['x_0'] - loss_comps['x_0_pushed_hat']) ** 2).mean()
+            no_push_latent_rec_loss = ((loss_comps['x0'] - loss_comps['xT_pushed_hat']) ** 2).mean()
+            rec_loss_xT = ((loss_comps['xT'] - loss_comps['xT_hat']) ** 2).mean()
+            push_latent_rec_loss = ((loss_comps['x0'] - loss_comps['x0_pushed_hat']) ** 2).mean()
 
-        rec_loss_x_0 = ((loss_comps['x_0'] - loss_comps['x_0_hat']) ** 2).mean()
+        rec_loss_x0 = ((loss_comps['x0'] - loss_comps['x0_hat']) ** 2).mean()
         latent_loss = ((loss_comps['z_0'] - loss_comps['z_0_pushed']) ** 2).mean()
 
-        loss = rec_loss_x_0 + latent_loss
+        loss = rec_loss_x0 + latent_loss
 
-        return {'loss': loss, 'rec_loss_x_0': rec_loss_x_0, 'rec_loss_x_T': rec_loss_x_T, 'latent_loss': latent_loss,
+        return {'loss': loss, 'rec_loss_x0': rec_loss_x0, 'rec_loss_xT': rec_loss_xT, 'latent_loss': latent_loss,
                 'push_latent_rec_loss': push_latent_rec_loss, 'no_push_latent_rec_loss': no_push_latent_rec_loss}
 
     def sample(self, batch_size, device, data_shape=(2,)):
-        x_T = torch.randn((batch_size, *data_shape)).to(device)
-        T = torch.ones((x_T.shape[0],)).to(x_T.device)
-        t = torch.zeros((x_T.shape[0],)).to(x_T.device)
+        xT = torch.randn((batch_size, *data_shape)).to(device)
+        T = torch.ones((xT.shape[0],)).to(xT.device)
+        t = torch.zeros((xT.shape[0],)).to(xT.device)
 
-        zT = self.x_T_observables_encoder(x_T, T)
+        zT = self.xT_observables_encoder(xT, T)
         zt0_push = self.koopman_operator(zT)
         xt0_push_hat = self.x0_observables_decoder(zt0_push, t)
 
-        return xt0_push_hat, x_T
+        return xt0_push_hat, xT

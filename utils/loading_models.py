@@ -17,7 +17,7 @@ def create_koopman_model(args):
     if args.dataset == Datasets.Checkerboard:
         return KoopmanDistillModelCheckerBoard(
             x0_observables_encoder=Encoder(input_dim=args.input_dim, hidden_dim=args.hidden_dim),
-            x_T_observables_encoder=Encoder(input_dim=args.input_dim, hidden_dim=args.hidden_dim),
+            xT_observables_encoder=Encoder(input_dim=args.input_dim, hidden_dim=args.hidden_dim),
             x0_observables_decoder=Decoder(output_dim=args.input_dim, hidden_dim=args.hidden_dim),
             koopman_operator=torch.nn.Linear(args.hidden_dim, args.hidden_dim),
             rec_loss_type=args.rec_loss_type,
