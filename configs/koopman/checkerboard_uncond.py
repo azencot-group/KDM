@@ -1,4 +1,4 @@
-from koopman_distillation.utils.names import DistillationModels, Datasets, RecLossType, CondType
+from utils.names import DistillationModels, Datasets, RecLossType, CondType
 
 
 def load_arguments(parser) -> None:

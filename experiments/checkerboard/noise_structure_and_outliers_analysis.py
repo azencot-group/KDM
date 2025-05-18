@@ -5,8 +5,8 @@ from sklearn.cluster import DBSCAN
 from scipy.stats import zscore
 from sklearn.cluster import KMeans
 
-from koopman_distillation.data.data_loading.data_loaders import load_data
-from koopman_distillation.utils.names import Datasets
+from data.data_loading.data_loaders import load_data
+from utils.names import Datasets
 
 seed = 42
 np.random.seed(seed)
@@ -72,7 +72,7 @@ plt.ylabel("Y-axis")
 plt.show()
 
 # Load the model and sample
-km = torch.load('./model.pt')
+km = torch.load('model.pt')
 samples = km.sample(10000, device)
 x0 = samples[0].cpu().detach()
 x0_data = batch[0].cpu().detach()

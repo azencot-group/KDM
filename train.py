@@ -1,13 +1,12 @@
-import sys
 import torch
 
-from koopman_distillation.utils.names import CondType
-from koopman_distillation.utils.loggers import CompositeLogger, NeptuneLogger, PrintLogger
-from koopman_distillation.configs.config_router import get_configs
-from koopman_distillation.data.data_loading.data_loaders import load_data
-from koopman_distillation.trainer.trainer import TrainLoop
-from koopman_distillation.utils.loading_models import create_distillation_model
-from koopman_distillation.utils.loggers.logging import create_workdir, log_config_and_tags, print_model_params
+from utils.names import CondType
+from utils.loggers import CompositeLogger, NeptuneLogger, PrintLogger
+from configs.config_router import get_configs
+from data.data_loading.data_loaders import load_data
+from trainer.trainer import TrainLoop
+from utils.loading_models import create_distillation_model
+from utils.loggers.logging import create_workdir, log_config_and_tags, print_model_params
 
 
 def main(args):

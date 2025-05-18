@@ -2,9 +2,9 @@ import numpy as np
 from torch.utils.data import Sampler
 import torch
 
-from koopman_distillation.data.data_loading.datasets_objects import CheckerboardDataset, Cifar10Dataset, \
+from data.data_loading.datasets_objects import CheckerboardDataset, Cifar10Dataset, \
     Cifar10DatasetCond, FFHQDataset, AFHQv2Dataset, Cifar10DatasetFlowMatching
-from koopman_distillation.utils.names import Datasets
+from utils.names import Datasets
 
 
 class InfiniteBatchSampler(Sampler):

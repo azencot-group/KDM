@@ -6,7 +6,7 @@ import numpy as np
 
 import torch
 
-from koopman_distillation.evaluation.fid import translate_to_image_format
+from evaluation.fid import translate_to_image_format
 
 
 def get_workdir(prefix_path, exp):

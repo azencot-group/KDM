@@ -6,9 +6,9 @@ import torch
 from torch import nn
 from piq import LPIPS
 
-from koopman_distillation.models.basic_modules import SongUNet, LinearControlModule
-from koopman_distillation.utils.math import psudo_hober_loss, generate_gradual_uniform_vector
-from koopman_distillation.utils.names import RecLossType, CondType, EigenSpecKoopmanLossTypes
+from models.basic_modules import SongUNet, LinearControlModule
+from utils.math import psudo_hober_loss, generate_gradual_uniform_vector
+from utils.names import RecLossType, CondType, EigenSpecKoopmanLossTypes
 
 
 # ------------------------------------- OUR IMPLEMENTATIONS --------------------------------------- #

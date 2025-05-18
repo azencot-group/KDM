@@ -1,28 +1,27 @@
-from koopman_distillation.utils.names import DistillationModels, Datasets, RecLossType, CondType, \
+from utils.names import DistillationModels, Datasets, RecLossType, CondType, \
     EigenSpecKoopmanLossTypes
 
 
 def load_arguments(parser) -> None:
     # --- general --- #
-    parser.add_argument('--experiment_name', type=str, default="cifar_uncond", help='The experiment name')
+    parser.add_argument('--experiment_name', type=str, default="afhq_uncond", help='The experiment name')
     parser.add_argument('--neptune', type=bool, default=False)
     parser.add_argument('--neptune_projects', type=str, default='azencot-group/koopman-dis')
-    parser.add_argument('--tags', type=str, nargs='+', default=['cifar uncond'])
+    parser.add_argument('--tags', type=str, nargs='+', default=['afhq'])
 
     # --- artifacts --- #
     parser.add_argument('--output_prefix_path', type=str,
                         default="/home/bermann/functional_mapping/koopman_distillation/results")
 
     # --- data --- #
-    parser.add_argument('--dataset', type=str, default=Datasets.Cifar10_1M_Uncond)
+    parser.add_argument('--dataset', type=str, default=Datasets.AFHQ_250K)
     # fast loading require the path to the npy file
     parser.add_argument('--datapath', type=str,
-                        default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_1M')
-    parser.add_argument('--datapath_test', type=str,
-                        default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/cifar32uncond_test_data')
+                        default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/AFHQV2_250K')
+    parser.add_argument('--datapath_test', type=str, default='')
     parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--num_workers', type=int, default=6)
-    parser.add_argument('--image_resolution', type=int, default=32)
+    parser.add_argument('--image_resolution', type=int, default=64)
 
     # --- training --- #
     parser.add_argument('--iterations', type=int, default=800001)
@@ -33,7 +32,7 @@ def load_arguments(parser) -> None:
     parser.add_argument('--distillation_model', type=str, default=DistillationModels.OneStepKOD)
     parser.add_argument('--channel_mult', type=int, nargs='+', default=[1, 2, 2, 2])
     parser.add_argument('--out_channels', type=int, default=1)
-    parser.add_argument('--model_channels', type=int, default=64)
+    parser.add_argument('--model_channels', type=int, default=32)
 
     # losses
     parser.add_argument('--rec_loss_type', type=str, default=RecLossType.LPIPS)
@@ -53,7 +52,7 @@ def load_arguments(parser) -> None:
     parser.add_argument('--koopman_loss_type', type=str, default=EigenSpecKoopmanLossTypes.NoLoss)
     parser.add_argument('--label_dim', type=int, default=0)
     # enable using linear projection to define specific latent space size, if none no linear projections will be added
-    parser.add_argument('--linear_proj', type=int, default=None)
+    parser.add_argument('--linear_proj', type=int, default=512)
 
     # --- adversarial --- #
     parser.add_argument('--advers', type=bool, default=True)

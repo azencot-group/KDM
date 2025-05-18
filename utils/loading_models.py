@@ -1,9 +1,9 @@
 import torch.nn
 
-from koopman_distillation.models.koopman_model_checkerboard import Encoder, Decoder, KoopmanDistillModelCheckerBoard
-from koopman_distillation.models.koopman_model import AdversarialOneStepKoopmanCifar10, \
+from models.koopman_model_checkerboard import Encoder, Decoder, KoopmanDistillModelCheckerBoard
+from models.koopman_model import AdversarialOneStepKoopmanCifar10, \
     AdversarialOneStepKoopmanCifar10Decomposed
-from koopman_distillation.utils.names import DistillationModels, Datasets
+from utils.names import DistillationModels, Datasets
 
 
 def create_distillation_model(model_type: DistillationModels, args):

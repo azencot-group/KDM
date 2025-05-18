@@ -5,9 +5,9 @@ import copy
 import numpy as np
 import torch
 
-from koopman_distillation.evaluation.fid import sample_and_calculate_fid_and_is
-from koopman_distillation.models.koopman_model import Discriminator
-from koopman_distillation.utils.loggers.logging import plot_samples, plot_spectrum
+from evaluation.fid import sample_and_calculate_fid_and_is
+from models.koopman_model import Discriminator
+from utils.loggers.logging import plot_samples, plot_spectrum
 
 
 class TrainLoop:
