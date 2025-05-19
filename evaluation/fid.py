@@ -3,6 +3,16 @@ import torch
 import numpy as np
 from pytorch_image_generation_metrics import get_inception_score_and_fid
 
+from utils.names import Datasets
+
+base_path = '/cs/cs_groups/azencot_group/functional_diffusion'
+dataset_name_ref_paths_map = {
+    Datasets.AFHQ_250K: f'{base_path}/afhqv2-64x64.npz',
+    Datasets.FFHQ_1M: f'{base_path}/ffhq-64x64.npz',
+    Datasets.Cifar10_1M_Uncond: f'{base_path}/cifar10-32x32.npy',
+    Datasets.Cifar10_1M_Cond: f'{base_path}/cifar10-32x32.npy',
+    Datasets.Cifar10_1M_Uncond_FM: f'{base_path}/cifar10-32x32.npy',
+}
 
 
 def translate_to_image_format(images):
@@ -10,7 +20,7 @@ def translate_to_image_format(images):
     return images_np
 
 
-def sample_and_calculate_fid_and_is(model, data_shape, num_samples, device, batch_size, epoch, image_dir, cond=False):
+def sample_and_calculate_fid_and_is(model, data_shape, num_samples, device, batch_size, dataset_name, cond=False):
     i = 0
     all_images = []
     while True:
@@ -32,7 +42,7 @@ def sample_and_calculate_fid_and_is(model, data_shape, num_samples, device, batc
     all_images = np.stack(all_images, axis=0)
 
     # Compute FID & IS
-    (IS, IS_std), FID = get_inception_score_and_fid(torch.tensor(all_images),
-                                                    '/cs/cs_groups/azencot_group/functional_diffusion/cifar10-32x32.npy')
+    file_path = dataset_name_ref_paths_map.get(dataset_name)
+    (IS, IS_std), FID = get_inception_score_and_fid(torch.tensor(all_images), file_path)
 
     return IS, FID

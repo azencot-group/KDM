@@ -139,20 +139,17 @@ python train.py --config koopman/cifar_uncond_decomposed
 --- 
 
 ### Evaluation
-**Note:** Currently, only evaluation on CIFAR-10 (conditional and unconditional) is supported.  
-Support for FID and evaluation on additional datasets is coming soon.
-
 ---
 
-#### CIFAR-10 Evaluation (Unconditional and Conditional)
+#### CIFAR-10 Evaluation (Unconditional and Conditional), FFHQ and AFHQv2
 
 To run evaluation:
 
-1. Download the file `cifar10-32x32.npy` from the datasets drive.
+1. Download the files `cifar10-32x32.npy`,  `ffhq-64x64.npz`, `afhqv2-64x64.npz` from the datasets drive. Store them.
 2. Open the file `fid.py`.
-3. Set the path to the downloaded file in the following line:
+3. Set the path to the directory that contains the downloaded files in the following line:
    ```
-   (IS, IS_std), FID = get_inception_score_and_fid(torch.tensor(all_images), '<path_to_ref_file>')
+   base_path = '<path_to_ref_file_direcotry>'
    ```
    
 ---

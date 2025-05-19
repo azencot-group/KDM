@@ -42,7 +42,7 @@ def load_arguments(parser) -> None:
     parser.add_argument('--w_push', type=float, default=1)
 
     # --- sampling --- #
-    parser.add_argument('--data_shape', type=list[int], default=(3, 32, 32))
+    parser.add_argument('--data_shape', type=list[int], default=(3, 64, 64))
 
     # --- koopman parameters --- #
     parser.add_argument('--noisy_latent', type=float, default=0.4)

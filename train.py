@@ -50,6 +50,7 @@ def main(args):
             advers=args.advers,
             cond=args.cond_type != CondType.Uncond,
             advers_w=args.advers_w,
+            dataset_name=args.dataset,
         ).train()
 
 

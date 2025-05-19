@@ -11,7 +11,7 @@ from utils.loggers.logging import plot_samples, plot_spectrum
 
 
 class TrainLoop:
-    def __init__(self, model, train_data, test_data, batch_size, device, output_dir, logger,
+    def __init__(self, model, train_data, test_data, batch_size, device, output_dir, logger, dataset_name,
                  iterations=800001, lr=0.0003, print_every=50, data_shape=(2), teach_model=False, advers=False,
                  cond=False, advers_w=1):
         self.model = model
@@ -26,6 +26,7 @@ class TrainLoop:
         self.output_dir = output_dir
         self.logger = logger
         self.TModel_exists = teach_model
+        self.dataset_name = dataset_name
         self.optimizer = torch.optim.Adam(params=model.parameters(), lr=lr, betas=(0.9, 0.999), eps=1e-8)
         self.best_fid_ema = float('inf')
         self.best_fid_model = float('inf')
@@ -97,20 +98,18 @@ class TrainLoop:
         # evaluate fid for cifar10
         if iteration % (self.print_every * 100) == 0 and self.data_shape[0] == 3:
             ema_is_model, ema_fid_model = sample_and_calculate_fid_and_is(model=self.ema,
+                                                                          dataset_name=self.dataset_name,
                                                                           data_shape=self.data_shape,
                                                                           num_samples=50_000,
                                                                           device=self.device,
                                                                           batch_size=self.batch_size,
-                                                                          epoch=iteration,
-                                                                          image_dir=self.output_dir,
                                                                           cond=self.cond)
             is_model, fid_model = sample_and_calculate_fid_and_is(model=self.model,
+                                                                  dataset_name=self.dataset_name,
                                                                   data_shape=self.data_shape,
                                                                   num_samples=50_000,
                                                                   device=self.device,
                                                                   batch_size=self.batch_size,
-                                                                  epoch=iteration,
-                                                                  image_dir=self.output_dir,
                                                                   cond=self.cond)
 
             self.logger.log('ema_model_fid', ema_fid_model, iteration)
