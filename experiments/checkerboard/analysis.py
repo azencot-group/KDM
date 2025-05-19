@@ -56,7 +56,7 @@ else:
 
 train_data, _ = load_data(
     dataset=Datasets.Checkerboard,
-    dataset_path='../../data/checkerboard/sampled_dataset.npy',
+    dataset_path='data/checkerboard/sampled_dataset.npy',
     dataset_path_test='',
     batch_size=10000,
     num_workers=4,
@@ -72,7 +72,7 @@ plt.ylabel("Y-axis")
 plt.show()
 
 # Load the model and sample
-km = torch.load('model.pt')
+km = torch.load('experiments/checkerboard/model.pt')
 samples = km.sample(10000, device)
 x0 = samples[0].cpu().detach()
 x0_data = batch[0].cpu().detach()

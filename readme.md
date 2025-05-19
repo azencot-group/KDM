@@ -99,7 +99,7 @@ python train.py --config koopman/checkerboard_uncond
 To reproduce the noise structure and outlier analysis plots in the paper:
 
 ```
-python experiments/checkerboard/analysis.py
+PYTHONPATH=. python experiments/checkerboard/analysis.py
 ```
 
 ---
@@ -111,12 +111,12 @@ python experiments/checkerboard/analysis.py
 To train the unconditional CIFAR-10 model:
 
 ```
-python train.py --config koopman/cifar10_uncond
+python train.py --config koopman/cifar_uncond
 ```
 
 To train the conditional CIFAR-10 model:
 ```
-python train.py --config koopman/cifar10_cond
+python train.py --config koopman/cifar_cond
 ```
 
 To train the unconditional FFHQ model:
