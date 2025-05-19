@@ -53,7 +53,7 @@ To use these datasets:
 1. Download them from the following Google Drive folder:  
    [Dataset Drive Folder](https://drive.google.com/drive/u/1/folders/19u6696ItAkG2kTfjfa4w-RhEqFHnpfLf)
 
-2. Unzip the downloaded file into the `data/` directory.
+2. Unzip the downloaded file.
 
 3. Update the corresponding config file with the correct path.  
    For example, for unconditional CIFAR-10, edit the config file:
@@ -62,10 +62,10 @@ To use these datasets:
    configs/koopman/cifar_uncond.py
    ```
 
-   and set the correct data path:
+   and set the correct data path foldr:
 
    ```python
-   data_path='data/{path_to_unzipped_folder}'
+   data_path='<your_data_path>/cifar10_uncond_train_data'
    ```
    or either just add it as a command line argument later on.
 

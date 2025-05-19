@@ -6,18 +6,17 @@ def load_arguments(parser) -> None:
     # --- general --- #
     parser.add_argument('--experiment_name', type=str, default="afhq_uncond", help='The experiment name')
     parser.add_argument('--neptune', type=bool, default=False)
-    parser.add_argument('--neptune_projects', type=str, default='azencot-group/koopman-dis')
+    parser.add_argument('--neptune_projects', type=str, default='<your_hub>/koopman-dis')
     parser.add_argument('--tags', type=str, nargs='+', default=['afhq'])
 
     # --- artifacts --- #
     parser.add_argument('--output_prefix_path', type=str,
-                        default="/home/bermann/functional_mapping/koopman_distillation/results")
+                        default="<your_output_path>/results")
 
     # --- data --- #
     parser.add_argument('--dataset', type=str, default=Datasets.AFHQ_250K)
     # fast loading require the path to the npy file
-    parser.add_argument('--datapath', type=str,
-                        default='/cs/cs_groups/azencot_group/functional_diffusion/data_for_distillation/AFHQV2_250K')
+    parser.add_argument('--datapath', type=str, default='<your_data_path>')
     parser.add_argument('--datapath_test', type=str, default='')
     parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--num_workers', type=int, default=6)

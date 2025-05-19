@@ -5,7 +5,7 @@ from pytorch_image_generation_metrics import get_inception_score_and_fid
 
 from utils.names import Datasets
 
-base_path = '/cs/cs_groups/azencot_group/functional_diffusion'
+base_path = '<your_base_path>'
 dataset_name_ref_paths_map = {
     Datasets.AFHQ_250K: f'{base_path}/afhqv2-64x64.npz',
     Datasets.FFHQ_1M: f'{base_path}/ffhq-64x64.npz',
