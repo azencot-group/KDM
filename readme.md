@@ -1,6 +1,8 @@
-# Koopman Distillation Models for Offline One-Step Denoising Distillation
+# One-Step Offline Distillation of Diffusion-based Models via Koopman Modeling
 
-This repository contains the official implementation of our paper on Koopman-based distillation models for efficient one-step denoising in offline setup.
+This repository contains the official implementation of our paper on Koopman-based distillation models for efficient one-step diffusion-based distillation in offline setup.
+[Link to the paper.](https://arxiv.org/abs/2505.13358)
+
 
 ![Alt text](artifacts/our_framework.png)
 ---
