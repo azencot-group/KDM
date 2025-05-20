@@ -169,4 +169,14 @@ so the script runs automatically without any additional setup.
 ---
 
 # Citation
-TODO
+``` 
+@misc{berman2025onestepofflinedistillationdiffusionbased,
+      title={One-Step Offline Distillation of Diffusion-based Models via Koopman Modeling}, 
+      author={Nimrod Berman and Ilan Naiman and Moshe Eliasof and Hedi Zisling and Omri Azencot},
+      year={2025},
+      eprint={2505.13358},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2505.13358}, 
+}
+``` 
