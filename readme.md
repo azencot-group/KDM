@@ -16,7 +16,7 @@ Follow these steps to set up the environment:
 Open your terminal and run:
 
 ```
-conda create --name your_env_name python=3.8
+conda create --name your_env_name python=3.9
 conda activate your_env_name
 ```
 
